@@ -6,7 +6,35 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of arima2 is to …
+The goal of `arima2` is to provide a set of tools to aid in the analysis
+of time series data in `R`. One such function within the `arima2`
+package is called `arima2`, which provides an interface to estimating
+Auto Regressive Integrated Moving Average (ARIMA) models using a
+random-restart algorithm. This function improves on the functionality of
+the `stats::arima` method, as it has the potential to increase the
+likelihood of the final output model. By design, the function cannot
+result in models with lower likelihoods than that of the `stats::arima`
+function. The potential for increased model likelihoods is obtained at
+the cost of computational efficiency, as the function is order $O(n)$
+times slower than the `stats::arima` function, where $n$ is the number
+of random restarts. Because the estimation of ARIMA models takes only a
+fraction of a second, we are of the opinion that potential to increase
+model likelihoods is well worth this computational cost. The `arima2`
+function is implemented by modifying the source code of the
+`stats::arima` function.
+
+## TODO:
+
+- [x] Implement `arima2`
+- [ ] Create simulate function for ARIMA models.
+- [ ] Add datasets to the package
+- [ ] `ggplot2` figures for ARIMA objects
+- [ ] Create function that makes AIC table.
+- [ ] `probe`: a function to compare simulated data to a model
+- [ ] `auto.arima2:` implements that `auto.arima` function using
+  `arima2`.
+- [ ] (Jesse) `polyroots:` A function to get the roots of the
+  polynomials created by the `AR` and `MA` coefficients of a model.
 
 ## Installation
 
@@ -27,29 +55,8 @@ library(arima2)
 ## basic example code
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`?
-You can include R chunks like so:
-
-``` r
-summary(cars)
-#>      speed           dist       
-#>  Min.   : 4.0   Min.   :  2.00  
-#>  1st Qu.:12.0   1st Qu.: 26.00  
-#>  Median :15.0   Median : 36.00  
-#>  Mean   :15.4   Mean   : 42.98  
-#>  3rd Qu.:19.0   3rd Qu.: 56.00  
-#>  Max.   :25.0   Max.   :120.00
-```
-
 You’ll still need to render `README.Rmd` regularly, to keep `README.md`
 up-to-date. `devtools::build_readme()` is handy for this. You could also
 use GitHub Actions to re-render `README.Rmd` every time you push. An
 example workflow can be found here:
 <https://github.com/r-lib/actions/tree/v1/examples>.
-
-You can also embed plots, for example:
-
-<img src="man/figures/README-pressure-1.png" width="100%" />
-
-In that case, don’t forget to commit and push the resulting figure
-files, so they display on GitHub and CRAN.
