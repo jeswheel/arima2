@@ -43,7 +43,8 @@ arima2(
     default is \code{TRUE} for undifferenced series, and it is ignored
     for ARIMA models with differencing.}
 
-\item{nrestart}{Number of random restarts to use in fitting the model.}
+\item{nrestart}{Number of random restarts to use in fitting the model. If
+nrestart = 0L, then the function is equivalent to \code{\link[stats:arima]{stats::arima()}}.}
 
 \item{transform.pars}{logical; if true, the AR parameters are
     transformed to ensure that they remain in the region of
@@ -104,8 +105,50 @@ arima2(
     variance) for the past observations in a differenced model.  Do not
     reduce this.}
 }
+\value{
+A list of class \code{"Arima"} with components:
+
+  \item{coef}{a vector of AR, MA and regression coefficients, which can
+    be extracted by the \code{\link[stats]{coef}} method.}
+
+  \item{sigma2}{the MLE of the innovations variance.}
+
+  \item{var.coef}{the estimated variance matrix of the coefficients
+    \code{coef}, which can be extracted by the \code{\link[stats]{vcov}} method.}
+
+  \item{loglik}{the maximized log-likelihood (of the differenced data),
+    or the approximation to it used.}
+
+  \item{arma}{A compact form of the specification, as a vector giving
+    the number of AR, MA, seasonal AR and seasonal MA coefficients,
+    plus the period and the number of non-seasonal and seasonal
+    differences.}
+
+  \item{aic}{the AIC value corresponding to the log-likelihood. Only
+    valid for \code{method = "ML"} fits.}
+
+  \item{residuals}{the fitted innovations.}
+
+  \item{call}{the matched call.}
+
+  \item{series}{the name of the series \code{x}.}
+
+  \item{code}{the convergence value returned by \code{\link[stats]{optim}}.}
+
+  \item{n.cond}{the number of initial observations not used in the fitting.}
+
+  \item{nobs}{the number of \dQuote{used} observations for the fitting,
+    can also be extracted via \code{\link[stats]{nobs}()} and is used by
+    \code{\link[stats]{BIC}}.}
+
+  \item{model}{A list representing the Kalman Filter used in the
+    fitting.  See \code{\link[stats]{KalmanLike}}.}
+}
 \description{
 Fit an ARIMA model to a univariate time series. This function builds on
 the ARIMA model fitting approach used in \code{\link[stats:arima]{stats::arima()}} by fitting
 model parameters via a random restart algorithm.
+}
+\examples{
+arima2(LakeHuron, order = c(2, 0, 1), nrestart = 10)
 }

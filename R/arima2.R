@@ -4,12 +4,14 @@
 #' the ARIMA model fitting approach used in [stats::arima()] by fitting
 #' model parameters via a random restart algorithm.
 #'
-#' @param nrestart Number of random restarts to use in fitting the model.
+#' @param nrestart Number of random restarts to use in fitting the model. If
+#'    nrestart = 0L, then the function is equivalent to [stats::arima()].
 #' @inheritParams stats::arima
-#' @return
+#' @inherit stats::arima return
 #' @export
 #'
 #' @examples
+#' arima2(LakeHuron, order = c(2, 0, 1), nrestart = 10)
 arima2 <- function(x, order = c(0L, 0L, 0L),
                    seasonal = list(order = c(0L, 0L, 0L), period = NA),
                    xreg = NULL, include.mean = TRUE, nrestart = 10,
@@ -20,6 +22,31 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
                    SSinit = c("Gardner1980", "Rossignol2011"),
                    optim.method = "BFGS", optim.control = list(),
                    kappa = 1000000) {
+
+  #  This function is based on the arima function of the stats package
+  #  of R. Below the copright statement of the arima function is reproduced.
+  #
+  #  File src/library/stats/R/arima.R
+  #  Part of the R package, http://www.R-project.org
+  #
+  #  Copyright (C) 2002-16 The R Core Team
+  #
+  #  This program is free software; you can redistribute it and/or modify
+  #  it under the terms of the GNU General Public License as published by
+  #  the Free Software Foundation; either version 2 of the License, or
+  #  (at your option) any later version.
+  #
+  #  This program is distributed in the hope that it will be useful,
+  #  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  #  GNU General Public License for more details.
+  #
+  #  A copy of the GNU General Public License is available at
+  #  http://www.r-project.org/Licenses/
+
+  #
+  # (arima2) Date: Nov 18, 2022
+  # Revised:
 
   C_TSconv <- utils::getFromNamespace("C_TSconv", "stats")
   C_getQ0 <- utils::getFromNamespace("C_getQ0", "stats")
@@ -100,6 +127,127 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
     for (r in roots) x <- c(x, 0) - c(0, x)/r
     c(Re(x[-1L]), rep.int(0, q - q0))
   }
+
+  getInits <- function(arma, init, mask) {
+    # Create matrix that is just the init object repeated, will be modified as
+    # needed.
+    out_init <- matrix(
+      rep(init, nrestart),
+      nrow = nrestart,
+      ncol = length(init),
+      byrow = TRUE
+    )
+
+    if (arma[1L] > 0L) {  # arma[1L] contains number of AR coefficients.
+
+      ar_ind <- 1:arma[1L]  # Get column index of AR coefficients
+
+      if (any(mask[ar_ind])) {  # If not all are fixed, then estimate them.
+        # n_ar <- sum(mask[ar_ind])  # Number of AR terms to estimate
+        which_est_cols <- ar_ind[mask[ar_ind]]  # Of the AR columns, which are estimated.
+
+        # Randomly generate AR coefficients, save them to appropriate columns
+        out_init[, which_est_cols] <- matrix(
+          runif(nrestart * length(which_est_cols), min = -1, max = 1),
+          nrow = nrestart, ncol = length(which_est_cols)
+        )
+
+        # Check if randomly generated AR coefficients make causal model
+        bad_ar <- which(!apply(out_init[, ar_ind, drop = FALSE], 1, arCheck))
+
+        # Keep generating parameters until all AR coefficients correspond to
+        # a causal model
+        while (length(bad_ar) > 0) {
+
+          # Generate new AR coefficients where needed
+          out_init[bad_ar, which_est_cols] <- matrix(
+            runif(length(bad_ar) * length(which_est_cols), min = -1, max = 1),
+            nrow = length(bad_ar), ncol = length(which_est_cols)
+          )
+
+          # Check if AR coefficients are causal
+          bad_ar <- which(!apply(out_init[, ar_ind, drop = FALSE], 1, arCheck))
+        }
+      }
+    }
+
+    # ARMA[2L] corresponds to the number of MA coefficients.
+    if (arma[2L] > 0L) {
+
+      # Get the indices for MA coefficients
+      ma_ind <- arma[1L] + 1L:arma[2L]
+
+      if (any(mask[ma_ind])) {  # If not all are fixed, then estimate them.
+        which_est_cols <- ma_ind[mask[ma_ind]]  # Of the MA columns, which are estimated.
+
+        # Generate random starting points for MA coefficients
+        out_init[, which_est_cols] <- matrix(
+          runif(nrestart * length(which_est_cols), min = -1, max = 1),
+          nrow = nrestart, ncol = length(which_est_cols)
+        )
+
+        out_init[, ma_ind] <- t(apply(out_init[, ma_ind, drop = FALSE], 1, maInvert))
+      }
+    }
+
+    if (arma[3L] > 0L) {
+      ar_seas_ind <- sum(arma[1L:2L]) + 1L:arma[3L]
+
+      if (any(mask[ar_seas_ind])) {  # If not all are fixed, then estimate them.
+        which_est_cols <- ar_seas_ind[mask[ar_seas_ind]]  # Of the AR columns, which are estimated.
+
+        # Randomly generate AR coefficients, save them to appropriate columns
+        out_init[, which_est_cols] <- matrix(
+          runif(nrestart * length(which_est_cols), min = -1, max = 1),
+          nrow = nrestart, ncol = length(which_est_cols)
+        )
+
+        # Check if randomly generated AR coefficients correspond to causal model
+        bad_ar <- which(!apply(out_init[, ar_seas_ind, drop = FALSE], 1, arCheck))
+
+        # Keep generating parameters until all AR coefficients correspond to
+        # a causal model
+        while (length(bad_ar) > 0) {
+
+          # Generate new AR coefficients where needed
+          out_init[bad_ar, which_est_cols] <- matrix(
+            runif(length(bad_ar) * length(which_est_cols), min = -1, max = 1),
+            nrow = length(bad_ar), ncol = length(which_est_cols)
+          )
+
+          # Check if AR coefficients are causal
+          bad_ar <- which(!apply(out_init[, ar_seas_ind, drop = FALSE], 1, arCheck))
+        }
+      }
+    }
+
+    if (arma[4L] > 0L) {
+      ma_seas_ind <- sum(arma[1L:3L]) + 1L:arma[4L]
+
+      if (any(mask[ma_seas_ind])) {  # If not all are fixed, then randomly initialize them.
+        which_est_cols <- ma_seas_ind[mask[ma_seas_ind]]  # Of the MA columns, which are estimated.
+
+        # Generate random starting points for MA coefficients
+        out_init[, which_est_cols] <- matrix(
+          runif(nrestart * length(which_est_cols), min = -1, max = 1),
+          nrow = nrestart, ncol = length(which_est_cols)
+        )
+
+        out_init[, ma_seas_ind] <- t(apply(out_init[, ma_seas_ind, drop = FALSE], 1, maInvert))
+      }
+    }
+
+    # Check if the model has an intercept, and if the intercept is estimated.
+    if (include.mean && mask[length(mask)]) {
+
+      # If intercept is fit, stay close to the intercept of init, since it's
+      # unlikely to change much.
+      out_init[, ncol(out_init)] <- out_init[, ncol(out_init)] + rnorm(nrestart, sd = 0.05)
+    }
+
+    rbind(init, out_init)  # return the random initial values.
+  }
+
   series <- deparse1(substitute(x))
 
   if (NCOL(x) > 1L) {
@@ -152,8 +300,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
   n.used <- sum(!is.na(x)) - length(Delta)
   if (is.null(xreg)) {
     ncxreg <- 0L
-  }
-  else {
+  } else {
     nmxreg <- deparse1(substitute(xreg))
     if (NROW(xreg) != n)
       stop("lengths of 'x' and 'xreg' do not match")
@@ -258,7 +405,6 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
     res <- if (no.optim)
       list(convergence = 0L, par = numeric(), value = armaCSS(numeric()))
     else{
-      # cat("Here1 \n")
       optim(
         init[mask], armaCSS, method = optim.method,
         hessian = TRUE, control = optim.control
@@ -280,8 +426,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
     var <- if (no.optim)
       numeric()
     else solve(res$hessian * n.used)
-  }
-  else {
+  } else {
     if (method == "CSS-ML") {
       res <- if (no.optim)
         list(convergence = 0L, par = numeric(), value = armaCSS(numeric()))
@@ -324,90 +469,156 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
       )
     } else {
 
-      # Do default fitting of arma model.
-      res <- optim(
-        init[mask], armafn, method = optim.method,
-        hessian = TRUE, control = optim.control,
-        trans = as.logical(transform.pars)
-      )
+      if (nrestart != 0L) {
 
-      # Random Restart Algorithm.
-      for (i in 1:nrestart) {
+        best_val <- Inf
 
-        # TODO: Better way of initializing parameters.
-        temp_init <- numeric(length(init[mask]))
+        # Get random starting values for ARMA coefficients
+        restart_inits <- getInits(arma, init, mask)
 
-        which_int <- length(init[mask])
+        coef_orig <- coef
 
-        # Initialize intercept
-        temp_init[which_int] <- rnorm(1, init[mask][which_int], 2)
-        temp_init[-which_int] <- runif(which_int - 1, min = 0, max = 2)
+        # Random Restart Algorithm.
+        for (i in 1:nrestart) {
 
-        suppressWarnings(
-          res_temp <- tryCatch(
-            list(fit = optim(
-              temp_init, armafn, method = optim.method,
-              hessian = TRUE, control = optim.control,
-              trans = as.logical(transform.pars)
-            ), w = 0, e = 0),
-            error = function(e) list(fit = list(value = Inf), w = 0, e = 1),
-            warning = function(w) list(fit = list(value = Inf), w = 1, e = 0)
+          new_init <- restart_inits[i, ]
+
+          # This shouldn't have any warnings or errors, but just in case...
+          suppressWarnings(
+            res_temp <- tryCatch(
+              list(fit = optim(
+                new_init, armafn, method = optim.method,
+                hessian = TRUE, control = optim.control,
+                trans = as.logical(transform.pars)
+              ), e = 0),
+              error = function(e) list(fit = list(value = Inf), e = 1)
+              # warning = function(w) list(fit = list(value = Inf), w = 1, e = 0)
+            )
           )
-        )
 
-        if (res_temp$e == 0 && res_temp$w == 0 && res_temp$fit$value < res$value) {
-          res <- res_temp$fit
+          # If there were no issues with fitting from the starting point,
+          # then check if it results in a better fit.
+          if (res_temp$e != 1 && length(res_temp$fit$par) > 0) {
+            coef_temp <- coef_orig
+            coef_temp[mask] <- res_temp$fit$par
+            if (transform.pars) {
+              if (arma[2L] > 0L) {
+                ind <- arma[1L] + 1L:arma[2L]
+                if (all(mask[ind]))
+                  coef_temp[ind] <- maInvert(coef_temp[ind])
+              }
+              if (arma[4L] > 0L) {
+                ind <- sum(arma[1L:3L]) + 1L:arma[4L]
+                if (all(mask[ind]))
+                  coef_temp[ind] <- maInvert(coef_temp[ind])
+              }
+              if (any(coef_temp[mask] != res_temp$fit$par)) {
+                oldcode <- res_temp$fit$convergence
+                res_temp <- tryCatch(
+                  list(fit = optim(
+                    coef_temp[mask], armafn, method = optim.method,
+                    hessian = TRUE,
+                    control = list(maxit = 0L, parscale = optim.control$parscale),
+                    trans = TRUE
+                  ), e = 0),
+                  error = function(e) list(fit = list(value = Inf, par = numeric(length(coef_temp[mask]))), e = 1)
+                )
+                res_temp$fit$convergence <- oldcode
+                coef_temp[mask] <- res_temp$fit$par
+              }
+              A_temp <- .Call(C_ARIMA_Gradtrans, as.double(coef_temp), arma)
+              A_temp <- A_temp[mask, mask]
+              var_temp <- tryCatch(
+                crossprod(A_temp, solve(res_temp$fit$hessian * n.used, A_temp)),
+                error = function(e) numeric()
+              )
+              coef_temp <- .Call(C_ARIMA_undoPars, coef_temp, arma)
+            }
+            else var_temp <- if (no.optim)
+              numeric()
+            else solve(res_temp$fit$hessian * n.used)
+            trarma_temp <- .Call(C_ARIMA_transPars, coef_temp, arma, FALSE)
+            mod_temp <- makeARIMA(trarma_temp[[1L]], trarma_temp[[2L]], Delta,
+                                  kappa, SSinit)
+            val_temp <- if (ncxreg > 0L)
+              arimaSS(x - xreg %*% coef_temp[narma + (1L:ncxreg)], mod_temp)
+            else arimaSS(x, mod_temp)
+            sigma2_temp <- val_temp[[1L]][1L]/n.used
+
+            value_temp <- 2 * n.used * res_temp$fit$value + n.used + n.used * log(2 * pi)
+
+            if (value_temp < best_val && length(var) >= 1 && res_temp$e == 0) {
+              best_val <- value_temp
+
+              coef <- coef_temp
+              res <- res_temp$fit
+              A <- A_temp
+              var <- var_temp
+              trarma <- trarma_temp
+              mod <- mod_temp
+              val <- val_temp
+              sigma2 <- sigma2_temp
+              value <- value_temp
+            }
+          }
         }
-      }
+      } else {  # nrestart == 0L
 
-    }
+        # This is equivalent to stats::arima
 
-    if (res$convergence > 0)
-      warning(gettextf("possible convergence problem: optim gave code = %d",
-                       res$convergence), domain = NA)
-    coef[mask] <- res$par
-    if (transform.pars) {
-      if (arma[2L] > 0L) {
-        ind <- arma[1L] + 1L:arma[2L]
-        if (all(mask[ind]))
-          coef[ind] <- maInvert(coef[ind])
-      }
-      if (arma[4L] > 0L) {
-        ind <- sum(arma[1L:3L]) + 1L:arma[4L]
-        if (all(mask[ind]))
-          coef[ind] <- maInvert(coef[ind])
-      }
-      if (any(coef[mask] != res$par)) {
-        oldcode <- res$convergence
+        # Fit ARMA model with default initial values
         res <- optim(
-          coef[mask], armafn, method = optim.method,
-          hessian = TRUE,
-          control = list(maxit = 0L, parscale = optim.control$parscale),
-          trans = TRUE
+          init[mask], armafn, method = optim.method,
+          hessian = TRUE, control = optim.control,
+          trans = as.logical(transform.pars)
         )
-        res$convergence <- oldcode
+
+        if (res$convergence > 0)
+          warning(gettextf("possible convergence problem: optim gave code = %d",
+                           res$convergence), domain = NA)
         coef[mask] <- res$par
+        if (transform.pars) {
+          if (arma[2L] > 0L) {
+            ind <- arma[1L] + 1L:arma[2L]
+            if (all(mask[ind]))
+              coef[ind] <- maInvert(coef[ind])
+          }
+          if (arma[4L] > 0L) {
+            ind <- sum(arma[1L:3L]) + 1L:arma[4L]
+            if (all(mask[ind]))
+              coef[ind] <- maInvert(coef[ind])
+          }
+          if (any(coef[mask] != res$par)) {
+            oldcode <- res$convergence
+            res <- optim(
+              coef[mask], armafn, method = optim.method,
+              hessian = TRUE,
+              control = list(maxit = 0L, parscale = optim.control$parscale),
+              trans = TRUE
+            )
+            res$convergence <- oldcode
+            coef[mask] <- res$par
+          }
+          A <- .Call(C_ARIMA_Gradtrans, as.double(coef), arma)
+          A <- A[mask, mask]
+          var <- crossprod(A, solve(res$hessian * n.used,
+                                    A))
+          coef <- .Call(C_ARIMA_undoPars, coef, arma)
+        }
+        else var <- if (no.optim)
+          numeric()
+        else solve(res$hessian * n.used)
+        trarma <- .Call(C_ARIMA_transPars, coef, arma, FALSE)
+        mod <- makeARIMA(trarma[[1L]], trarma[[2L]], Delta,
+                         kappa, SSinit)
+        val <- if (ncxreg > 0L)
+          arimaSS(x - xreg %*% coef[narma + (1L:ncxreg)], mod)
+        else arimaSS(x, mod)
+        sigma2 <- val[[1L]][1L]/n.used
       }
-      A <- .Call(C_ARIMA_Gradtrans, as.double(coef), arma)
-      A <- A[mask, mask]
-      var <- crossprod(A, solve(res$hessian * n.used,
-                                A))
-      coef <- .Call(C_ARIMA_undoPars, coef, arma)
     }
-    else var <- if (no.optim)
-      numeric()
-    else solve(res$hessian * n.used)
-    trarma <- .Call(C_ARIMA_transPars, coef, arma, FALSE)
-    mod <- makeARIMA(trarma[[1L]], trarma[[2L]], Delta,
-                     kappa, SSinit)
-    val <- if (ncxreg > 0L)
-      arimaSS(x - xreg %*% coef[narma + (1L:ncxreg)],
-              mod)
-    else arimaSS(x, mod)
-    sigma2 <- val[[1L]][1L]/n.used
   }
-  value <- 2 * n.used * res$value + n.used + n.used * log(2 *
-                                                            pi)
+  value <- 2 * n.used * res$value + n.used + n.used * log(2 * pi)
   aic <- if (method != "CSS")
     value + 2 * sum(mask) + 2
   else NA
@@ -432,8 +643,9 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
     }
   }
   names(coef) <- nm
-  if (!no.optim)
+  if (!no.optim) {
     dimnames(var) <- list(nm[mask], nm[mask])
+  }
   resid <- val[[2L]]
   tsp(resid) <- xtsp
   class(resid) <- "ts"
