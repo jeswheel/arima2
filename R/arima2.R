@@ -249,6 +249,12 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
     stop("only implemented for univariate time series")
   }
 
+  if (!is.null(fixed)) {
+    warning("The random restart algorithm is not yet implemented for ARIMA
+            models with fixed components. Setting nrester to 0L")
+    nrestart <- 0L
+  }
+
   method <- match.arg(method)
   x <- as.ts(x)
   if (!is.numeric(x)) {
@@ -468,9 +474,6 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
 
         best_val <- Inf
 
-        # Get random starting values for ARMA coefficients
-        # restart_inits <- getInits(arma, init, mask)
-
         coef_orig <- coef
 
         # Random Restart Algorithm.
@@ -526,6 +529,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
                   ), e = 0),
                   error = function(e) list(fit = list(value = Inf, par = numeric(length(coef_temp[mask]))), e = 1)
                 )
+
                 res_temp$fit$convergence <- oldcode
                 coef_temp[mask] <- res_temp$fit$par
               }
