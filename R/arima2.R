@@ -479,9 +479,9 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
           if (i == 1L) {
             new_init <- init
           } else if (include.mean) {
-            new_init <- sample_ARMA_coef(arma, init[length(init)])
+            new_init <- .sample_ARMA_coef(arma, init[length(init)])
           } else {
-            new_init <- sample_ARMA_coef(arma)
+            new_init <- .sample_ARMA_coef(arma)
           }
 
           #new_init <- restart_inits[i, ]

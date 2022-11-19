@@ -24,16 +24,91 @@
 #' resulting polynomial is checked to ensure all roots lie outside the unit
 #' circle; if not, we resample the coefficients.
 #'
+#' @param order A specification of the non-seasonal part of the ARIMA model:
+#'    this is different than the `order` input of [stats::arima()], because
+#'    the degree of differencing is not included. Thus order is a vector of
+#'    length two of the form \eqn{(p, q)}.
+#' @param seasonal A specification of the seasonal part of the ARIMA model. Can
+#'    be either a vector of length 2, or a list with an `order` component; if
+#'    a list, aperiod can be included, but it does not affect the function
+#'    output.
+#'
+#' @return a vector of randomly sampled ARMA coefficients.
+#'
+#' @export
+#' @examples {
+#' sample_ARMA_coef(
+#'    order = c(2, 1),
+#'    seasonal = list(order = c(1, 0, 0), period = 2),
+#'    n = 100
+#' )
+#' }
+sample_ARMA_coef <- function(
+    order = c(0L, 0L),
+    seasonal = list(order = c(0L, 0L), period = NA),
+    n = 1
+) {
+
+  if (class(seasonal) == "list") {
+    if (is.null(seasonal$order)) {
+      stop("`seasonal` is missing component `order`.")
+    } else if (length(seasonal$order) != 2) {
+      stop("`seasonal$order` needs to be of length == 2")
+    }
+
+    seasonal <- seasonal$order
+  }
+
+  if (length(order) != 2) {
+    stop("`order` should have length == 2.")
+  }
+
+  if (length(seasonal) != 2) {
+    stop("Seasonal `order` should have length == 2.")
+  }
+
+  arma <- as.integer(
+    c(order, seasonal, 1L, 0L, 0L)
+  )
+
+  res_names <- 0
+
+  if (order[1L] != 0) {
+    res_names <- paste0("ar", 1:order[1L])
+  }
+
+  if (order[2L] != 0) {
+    res_names <- c(res_names, paste0("ma", 1:order[2L]))
+  }
+
+  if (seasonal[1L] != 0) {
+    res_names <- c(res_names, paste0("ar_seas", 1:seasonal[1L]))
+  }
+
+  if (seasonal[2L] != 0) {
+    res_names <- c(res_names, paste0("ma_seas", 1:seasonal[2L]))
+  }
+
+  if (n == 1L) {
+    res <- .sample_ARMA_coef(arma)
+    names(res) <- res_names
+  } else {
+    res <- t(replicate(n, .sample_ARMA_coef(arma)))
+    colnames(res) <- res_names
+  }
+
+  res
+}
+
+#' Internal Sample ARMA Coef.
 #'
 #' @param arma vector of integers c(ar, ma, ar_seas, ma_seas, period, i, i_seas)
 #' @param intercept If missing, the intercept is assumed fixed. Otherwise,
 #'    new intercept values are sampled near the value of `intercept`.
 #'
 #' @return a vector of randomly sampled ARMA coefficients.
-#'
 #' @noRd
-#' @examples sample_ARMA_coef(c(2, 1, 1, 0, 1, 0, 0), 153.1)
-sample_ARMA_coef <- function(arma, intercept) {
+.sample_ARMA_coef <- function(arma, intercept) {
 
   # get number of coefficients
   ar <- arma[1L]
