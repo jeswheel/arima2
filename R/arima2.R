@@ -105,12 +105,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
                  as.integer(ncond), FALSE)
     0.5 * log(res)
   }
-  arCheck <- function(ar) {
-    p <- max(which(c(1, -ar) != 0)) - 1
-    if (!p)
-      return(TRUE)
-    all(Mod(polyroot(c(1, -ar[1L:p]))) > 1)
-  }
+
   maInvert <- function(ma) {
     q <- length(ma)
     q0 <- max(which(c(1, ma) != 0)) - 1L
@@ -153,7 +148,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
         )
 
         # Check if randomly generated AR coefficients make causal model
-        bad_ar <- which(!apply(out_init[, ar_ind, drop = FALSE], 1, arCheck))
+        bad_ar <- which(!apply(out_init[, ar_ind, drop = FALSE], 1, .arCheck))
 
         # Keep generating parameters until all AR coefficients correspond to
         # a causal model
@@ -166,7 +161,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
           )
 
           # Check if AR coefficients are causal
-          bad_ar <- which(!apply(out_init[, ar_ind, drop = FALSE], 1, arCheck))
+          bad_ar <- which(!apply(out_init[, ar_ind, drop = FALSE], 1, .arCheck))
         }
       }
     }
@@ -203,7 +198,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
         )
 
         # Check if randomly generated AR coefficients correspond to causal model
-        bad_ar <- which(!apply(out_init[, ar_seas_ind, drop = FALSE], 1, arCheck))
+        bad_ar <- which(!apply(out_init[, ar_seas_ind, drop = FALSE], 1, .arCheck))
 
         # Keep generating parameters until all AR coefficients correspond to
         # a causal model
@@ -216,7 +211,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
           )
 
           # Check if AR coefficients are causal
-          bad_ar <- which(!apply(out_init[, ar_seas_ind, drop = FALSE], 1, arCheck))
+          bad_ar <- which(!apply(out_init[, ar_seas_ind, drop = FALSE], 1, .arCheck))
         }
       }
     }
@@ -387,10 +382,10 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
       init[ind] <- init0[ind]
     if (method == "ML") {
       if (arma[1L] > 0)
-        if (!arCheck(init[1L:arma[1L]]))
+        if (!.arCheck(init[1L:arma[1L]]))
           stop("non-stationary AR part")
       if (arma[3L] > 0)
-        if (!arCheck(init[sum(arma[1L:2L]) + 1L:arma[3L]]))
+        if (!.arCheck(init[sum(arma[1L:2L]) + 1L:arma[3L]]))
           stop("non-stationary seasonal AR part")
       if (transform.pars)
         init <- .Call(C_ARIMA_Invtrans, as.double(init),
@@ -440,10 +435,10 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
       if (res$convergence == 0)
         init[mask] <- res$par
       if (arma[1L] > 0)
-        if (!arCheck(init[1L:arma[1L]]))
+        if (!.arCheck(init[1L:arma[1L]]))
           stop("non-stationary AR part from CSS")
       if (arma[3L] > 0)
-        if (!arCheck(init[sum(arma[1L:2L]) + 1L:arma[3L]]))
+        if (!.arCheck(init[sum(arma[1L:2L]) + 1L:arma[3L]]))
           stop("non-stationary seasonal AR part from CSS")
       ncond <- 0L
     }
@@ -474,14 +469,22 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
         best_val <- Inf
 
         # Get random starting values for ARMA coefficients
-        restart_inits <- getInits(arma, init, mask)
+        # restart_inits <- getInits(arma, init, mask)
 
         coef_orig <- coef
 
         # Random Restart Algorithm.
         for (i in 1:nrestart) {
 
-          new_init <- restart_inits[i, ]
+          if (i == 1L) {
+            new_init <- init
+          } else if (include.mean) {
+            new_init <- sample_ARMA_coef(arma, init[length(init)])
+          } else {
+            new_init <- sample_ARMA_coef(arma)
+          }
+
+          #new_init <- restart_inits[i, ]
 
           # This shouldn't have any warnings or errors, but just in case...
           suppressWarnings(
