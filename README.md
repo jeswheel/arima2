@@ -28,7 +28,7 @@ function is implemented by modifying the source code of the
 - [x] Implement `arima2`
 - [ ] Create simulate function for ARIMA models.
 - [ ] Add datasets to the package
-- [ ] `ggplot2` figures for ARIMA objects
+- [ ] (Dhajanae) `ggplot2` figures for ARIMA objects
 - [ ] Create function that makes AIC table.
 - [ ] `probe`: a function to compare simulated data to a model
 - [ ] `auto.arima2:` implements that `auto.arima` function using
@@ -55,8 +55,6 @@ library(arima2)
 ## basic example code
 ```
 
-You’ll still need to render `README.Rmd` regularly, to keep `README.md`
-up-to-date. `devtools::build_readme()` is handy for this. You could also
-use GitHub Actions to re-render `README.Rmd` every time you push. An
-example workflow can be found here:
-<https://github.com/r-lib/actions/tree/v1/examples>.
+Don’t forget to render the `README.Rmd` if you update it. If you don’t,
+then there is a GitHub Action implemented to re-render the `README.Rmd`,
+but this is less ideal.
