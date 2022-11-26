@@ -29,9 +29,9 @@ function is implemented by modifying the source code of the
 - [ ] Create simulate function for ARIMA models.
 - [ ] Add datasets to the package
 - [ ] (Dhajanae) `ggplot2` figures for ARIMA objects
-- [ ] Create function that makes AIC table.
+- [ ] (Noel)Create function that makes AIC table.
 - [ ] `probe`: a function to compare simulated data to a model
-- [ ] `auto.arima2:` implements that `auto.arima` function using
+- [ ] (Noel)`auto.arima2:` implements that `auto.arima` function using
   `arima2`.
 - [ ] (Jesse) `polyroots:` A function to get the roots of the
   polynomials created by the `AR` and `MA` coefficients of a model.
