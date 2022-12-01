@@ -33,7 +33,7 @@ function is implemented by modifying the source code of the
 - [ ] `probe`: a function to compare simulated data to a model
 - [ ] (Noel)`auto.arima2:` implements that `auto.arima` function using
   `arima2`.
-- [ ] (Jesse) `polyroots:` A function to get the roots of the
+- [x] (Jesse) `polyroots:` A function to get the roots of the
   polynomials created by the `AR` and `MA` coefficients of a model.
 
 ## Installation
@@ -52,9 +52,44 @@ This is a basic example which shows you how to solve a common problem:
 
 ``` r
 library(arima2)
-## basic example code
+
+# Set the seed for reproducible results. The seed was chosen so as to 
+# demonstrate a reproducible example of arima2 outperforming stats::arima
+# when the data are simulated from a known ARMA model. 
+set.seed(48312)  
+
+# Get model coefficients from ARMA(2, 2)
+coefs <- sample_ARMA_coef(order = c(2, 2))
+
+# Get model intercept 
+intercept <- rnorm(1, sd = 50)
+
+# Generate data from ARMA model 
+x <- intercept + arima.sim(
+  n = 100, 
+  model = list(ar = coefs[grepl("^ar[[:digit:]]+", names(coefs))], 
+               ma = coefs[grepl("^ma[[:digit:]]+", names(coefs))])
+  )
+
+# Plot the data
+plot(x)
 ```
 
-Don’t forget to render the `README.Rmd` if you update it. If you don’t,
-then there is a GitHub Action implemented to re-render the `README.Rmd`,
-but this is less ideal.
+<img src="man/figures/README-example-1.png" width="100%" />
+
+``` r
+
+# Fit ARMA model using arima2 and stats::arima 
+arma2 <- arima2(x, order = c(2, 0, 2))
+arma <- arima(x, order = c(2, 0, 2))
+```
+
+In the example above, the resulting log-likelihood of the `stats::arima`
+function is -139.34, and the log-likelihood of the `arima2` function is
+-135.04. For this particular model and dataset, the random restart
+algorithm implemented in `arima2` improved the model likelihood by 4.31
+log-likelihood units.
+
+**Developer note:** Don’t forget to render the `README.Rmd` if you
+update it. If you don’t, then there is a GitHub Action implemented to
+re-render the `README.Rmd`, but this is less ideal.
