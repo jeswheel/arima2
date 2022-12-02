@@ -660,5 +660,5 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
                  mask = mask, loglik = -0.5 * value, aic = aic, arma = arma,
                  residuals = resid, call = match.call(), series = series,
                  code = res$convergence, n.cond = ncond, nobs = n.used,
-                 model = mod), class = "Arima")
+                 model = mod, x = x), class = c("Arima2", "Arima"))
 }
