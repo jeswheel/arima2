@@ -131,7 +131,7 @@ sample_ARMA_coef <- function(
 
   } else {  # Odd number
 
-    ar_coef <- stats::runif(1L)
+    ar_coef <- stats::runif(1L, min = -1, max = 1)
 
     if (ar > 1L) {
 
@@ -142,7 +142,7 @@ sample_ARMA_coef <- function(
         ar_inv_roots_conj <- Conj(ar_inv_roots)
 
         ar_coef <- Re(
-          .roots2poly(c(stats::runif(1), ar_inv_roots, ar_inv_roots_conj), type = 'ar')
+          .roots2poly(c(stats::runif(1L, -1, 1), ar_inv_roots, ar_inv_roots_conj), type = 'ar')
         )
       }
     }
@@ -163,7 +163,7 @@ sample_ARMA_coef <- function(
 
   } else {  # Odd number
 
-    ma_coef <- stats::runif(1L)
+    ma_coef <- stats::runif(1L, -1, 1)
 
     if (ma > 1L) {
 
@@ -175,7 +175,7 @@ sample_ARMA_coef <- function(
 
         ma_coef <- Re(
           .roots2poly(
-            c(stats::runif(1), ma_inv_roots, ma_inv_roots_conj),
+            c(stats::runif(1L, -1, 1), ma_inv_roots, ma_inv_roots_conj),
             type = 'ma'
           )
         )
@@ -198,7 +198,7 @@ sample_ARMA_coef <- function(
     }
 
   } else {  # Odd number
-    ar_seas_coef <- stats::runif(1L)
+    ar_seas_coef <- stats::runif(1L, -1, 1)
 
     if (ar_seas > 1L) {
 
@@ -210,7 +210,7 @@ sample_ARMA_coef <- function(
 
         ar_seas_coef <- Re(
           .roots2poly(
-            c(stats::runif(1), ar_seas_inv_roots, ar_seas_inv_roots_conj),
+            c(stats::runif(1L, -1, 1), ar_seas_inv_roots, ar_seas_inv_roots_conj),
             type = 'ar')
         )
 
@@ -238,7 +238,7 @@ sample_ARMA_coef <- function(
 
   } else {  # Odd number
 
-    ma_seas_coef <- stats::runif(1L)
+    ma_seas_coef <- stats::runif(1L, -1, 1)
 
     if (ma_seas > 1L) {
 
@@ -250,7 +250,7 @@ sample_ARMA_coef <- function(
 
         ma_seas_coef <- Re(
           .roots2poly(
-            c(stats::runif(1), ma_seas_inv_roots, ma_seas_inv_roots_conj),
+            c(stats::runif(1L, -1, 1), ma_seas_inv_roots, ma_seas_inv_roots_conj),
             type = 'ma'
           )
         )
