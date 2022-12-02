@@ -473,8 +473,10 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
       if (nrestart != 0L) {
 
         best_val <- Inf
-
         coef_orig <- coef
+        inits <- matrix(nrow = nrestart, ncol = length(init))
+        Errs <- c()
+        Err_MSG <- list()
 
         # Random Restart Algorithm.
         for (i in 1:nrestart) {
@@ -487,7 +489,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
             new_init <- .sample_ARMA_coef(arma)
           }
 
-          #new_init <- restart_inits[i, ]
+          inits[i, ] <- new_init
 
           # This shouldn't have any warnings or errors, but just in case...
           suppressWarnings(
@@ -497,10 +499,15 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
                 hessian = TRUE, control = optim.control,
                 trans = as.logical(transform.pars)
               ), e = 0),
-              error = function(e) list(fit = list(value = Inf), e = 1)
+              error = function(e) list(fit = list(value = Inf), e = 1, mes = e)
               # warning = function(w) list(fit = list(value = Inf), w = 1, e = 0)
             )
           )
+
+          if (res_temp$e == 1) {
+            Errs <- c(Errs, i)
+            Err_MSG <- c(Err_MSG, res_temp$mes)
+          }
 
           # If there were no issues with fitting from the starting point,
           # then check if it results in a better fit.
@@ -527,7 +534,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
                     control = list(maxit = 0L, parscale = optim.control$parscale),
                     trans = TRUE
                   ), e = 0),
-                  error = function(e) list(fit = list(value = Inf, par = numeric(length(coef_temp[mask]))), e = 1)
+                  error = function(e) list(fit = list(value = Inf, par = numeric(length(coef_temp[mask]))), e = 1, mes = e)
                 )
 
                 res_temp$fit$convergence <- oldcode
@@ -553,6 +560,11 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
             sigma2_temp <- val_temp[[1L]][1L]/n.used
 
             value_temp <- 2 * n.used * res_temp$fit$value + n.used + n.used * log(2 * pi)
+
+            if (res_temp$e == 1 || length(var) < 1) {
+              Errs <- c(Errs, i)
+              Err_MSG <- c(Err_MSG, res_temp$mes)
+            }
 
             if (value_temp < best_val && length(var) >= 1 && res_temp$e == 0) {
               best_val <- value_temp
@@ -660,5 +672,6 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
                  mask = mask, loglik = -0.5 * value, aic = aic, arma = arma,
                  residuals = resid, call = match.call(), series = series,
                  code = res$convergence, n.cond = ncond, nobs = n.used,
-                 model = mod), class = "Arima")
+                 model = mod, x = x, Errs = Errs, Msg = Err_MSG,
+                 Inits = inits), class = c("Arima2", "Arima"))
 }

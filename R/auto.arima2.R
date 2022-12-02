@@ -1,3 +1,7 @@
+#' Auto Arima 2
+#' @inherit forecast::auto.arima
+#' @param nrestart number of random restarts for arima2 function.
+#' @export
 auto.arima2 = function (y, nrestart = 10, d = NA, D = NA, max.p = 5, max.q = 5, max.P = 2,
           max.Q = 2, max.order = 5, max.d = 2, max.D = 1, start.p = 2,
           start.q = 2, start.P = 1, start.Q = 1, stationary = FALSE,
@@ -9,6 +13,11 @@ auto.arima2 = function (y, nrestart = 10, d = NA, D = NA, max.p = 5, max.q = 5, 
           allowdrift = TRUE, allowmean = TRUE, lambda = NULL, biasadj = FALSE,
           parallel = FALSE, num.cores = 2, x = y, ...)
 {
+
+  ndiffs <- utils::getFromNamespace("ndiffs", "forecast")
+  fitted.Arima <- utils::getFromNamespace("fitted.Arima", "forecast")
+  UndoWhichModels <- utils::getFromNamespace("UndoWhichModels", "forecast")
+  WhichModels <- utils::getFromNamespace("WhichModels", "forecast")
   if (stepwise && parallel) {
     warning("Parallel computer is only implemented when stepwise=FALSE, the model will be fit in serial.")
     parallel <- FALSE
@@ -75,7 +84,7 @@ auto.arima2 = function (y, nrestart = 10, d = NA, D = NA, max.p = 5, max.q = 5, 
     ic <- "aic"
   }
   if (!is.null(lambda)) {
-    x <- BoxCox(x, lambda)
+    x <- forecast::BoxCox(x, lambda)
     lambda <- attr(x, "lambda")
     attr(lambda, "biasadj") <- biasadj
   }
@@ -175,7 +184,7 @@ auto.arima2 = function (y, nrestart = 10, d = NA, D = NA, max.p = 5, max.q = 5, 
     if (is.null(xreg)) {
       if (D > 0 && d == 0) {
         fit <- arima2(x, order = c(0, d, 0), seasonal = list(order = c(0,
-                                                                      D, 0), period = m), include.constant = TRUE,
+                                                                      D, 0), period = m), include.mean = TRUE,
                      fixed = mean(dx/m, na.rm = TRUE), method = method, nrestart=nrestart,
                      ...)
       }
@@ -188,7 +197,7 @@ auto.arima2 = function (y, nrestart = 10, d = NA, D = NA, max.p = 5, max.q = 5, 
                      ...)
       }
       else if (d < 2) {
-        fit <- arima2(x, order = c(0, d, 0), include.constant = TRUE,
+        fit <- arima2(x, order = c(0, d, 0), include.mean = TRUE,
                      fixed = mean(dx, na.rm = TRUE), method = method, nrestart=nrestart,
                      ...)
       }
@@ -876,13 +885,6 @@ summary.Arima <- function(object, ...) {
   object
 }
 
-#' @export
-print.summary.Arima <- function(x, ...) {
-  NextMethod()
-  cat("\nTraining set error measures:\n")
-  print(accuracy(x))
-}
-
 # Check that Arima object has positive coefficient variances without returning warnings
 checkarima <- function(object) {
   suppressWarnings(test <- any(is.nan(sqrt(diag(object$var.coef)))))
@@ -966,10 +968,10 @@ search.arima <- function(x, d=NA, D=NA, max.p=5, max.q=5,
     }
 
     if (is.null(num.cores)) {
-      num.cores <- detectCores()
+      num.cores <- parallel::detectCores()
     }
 
-    all.models <- mclapply(X = to.check, FUN = par.all.arima, max.order=max.order, mc.cores = num.cores)
+    all.models <- parallel::mclapply(X = to.check, FUN = par.all.arima, max.order=max.order, mc.cores = num.cores)
 
     # Removing null elements
     all.models <- all.models[!sapply(all.models, is.null)]
