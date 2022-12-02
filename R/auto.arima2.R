@@ -1,4 +1,4 @@
-auto.arima2 = function (y, d = NA, D = NA, max.p = 5, max.q = 5, max.P = 2,
+auto.arima2 = function (y, nrestart = 10, d = NA, D = NA, max.p = 5, max.q = 5, max.P = 2,
           max.Q = 2, max.order = 5, max.d = 2, max.D = 1, start.p = 2,
           start.q = 2, start.P = 1, start.Q = 1, stationary = FALSE,
           seasonal = TRUE, ic = c("aicc", "aic", "bic"), stepwise = TRUE,
@@ -7,7 +7,7 @@ auto.arima2 = function (y, d = NA, D = NA, max.p = 5, max.q = 5, max.P = 2,
           xreg = NULL, test = c("kpss", "adf", "pp"), test.args = list(),
           seasonal.test = c("seas", "ocsb", "hegy", "ch"), seasonal.test.args = list(),
           allowdrift = TRUE, allowmean = TRUE, lambda = NULL, biasadj = FALSE,
-          parallel = FALSE, num.cores = 2, x = y, nrestart = 10, ...)
+          parallel = FALSE, num.cores = 2, x = y, ...)
 {
   if (stepwise && parallel) {
     warning("Parallel computer is only implemented when stepwise=FALSE, the model will be fit in serial.")
