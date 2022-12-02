@@ -3,7 +3,7 @@ auto.arima2 = function (y, nrestart = 10, d = NA, D = NA, max.p = 5, max.q = 5, 
           start.q = 2, start.P = 1, start.Q = 1, stationary = FALSE,
           seasonal = TRUE, ic = c("aicc", "aic", "bic"), stepwise = TRUE,
           nmodels = 94, trace = FALSE, approximation = (length(x) >
-                                                          150 | frequency(x) > 12), method = NULL, truncate = NULL,
+                                                          150 | stats::frequency(x) > 12), method = NULL, truncate = NULL,
           xreg = NULL, test = c("kpss", "adf", "pp"), test.args = list(),
           seasonal.test = c("seas", "ocsb", "hegy", "ch"), seasonal.test.args = list(),
           allowdrift = TRUE, allowmean = TRUE, lambda = NULL, biasadj = FALSE,
@@ -18,14 +18,14 @@ auto.arima2 = function (y, nrestart = 10, d = NA, D = NA, max.p = 5, max.q = 5, 
     trace <- FALSE
   }
   series <- deparse(substitute(y))
-  x <- as.ts(x)
+  x <- stats::as.ts(x)
   if (NCOL(x) > 1) {
     stop("auto.arima2 can only handle univariate time series")
   }
   orig.x <- x
   missing <- is.na(x)
-  firstnonmiss <- head(which(!missing), 1)
-  lastnonmiss <- tail(which(!missing), 1)
+  firstnonmiss <- utils::head(which(!missing), 1)
+  lastnonmiss <- utils::tail(which(!missing), 1)
   serieslength <- sum(!missing[firstnonmiss:lastnonmiss])
   x <- subset(x, start = firstnonmiss)
   if (!is.null(xreg)) {
@@ -56,7 +56,7 @@ auto.arima2 = function (y, nrestart = 10, d = NA, D = NA, max.p = 5, max.q = 5, 
   test <- match.arg(test)
   seasonal.test <- match.arg(seasonal.test)
   if (seasonal) {
-    m <- frequency(x)
+    m <- stats::frequency(x)
   }
   else {
     m <- 1
@@ -95,12 +95,12 @@ auto.arima2 = function (y, nrestart = 10, d = NA, D = NA, max.p = 5, max.q = 5, 
       if (any(constant_columns)) {
         xregg <- xregg[, -which(constant_columns), drop = FALSE]
       }
-      sv <- svd(na.omit(cbind(rep(1, NROW(xregg)), xregg)))$d
+      sv <- svd(stats::na.omit(cbind(rep(1, NROW(xregg)), xregg)))$d
       if (min(sv)/sum(sv) < .Machine$double.eps) {
         stop("xreg is rank deficient")
       }
       j <- !is.na(x) & !is.na(rowSums(xregg))
-      xx[j] <- residuals(lm(x ~ xregg))
+      xx[j] <- stats::residuals(stats::lm(x ~ xregg))
     }
   }
   else {
@@ -223,9 +223,9 @@ auto.arima2 = function (y, nrestart = 10, d = NA, D = NA, max.p = 5, max.q = 5, 
   }
   if (approximation) {
     if (!is.null(truncate)) {
-      tspx <- tsp(x)
+      tspx <- stats::tsp(x)
       if (length(x) > truncate) {
-        x <- ts(tail(x, truncate), end = tspx[2], frequency = tspx[3])
+        x <- stats::ts(utils::tail(x, truncate), end = tspx[2], frequency = tspx[3])
       }
     }
     if (D == 0) {
@@ -686,10 +686,10 @@ auto.arima2 = function (y, nrestart = 10, d = NA, D = NA, max.p = 5, max.q = 5, 
 myarima <- function(x, order = c(0, 0, 0), seasonal = c(0, 0, 0), constant=TRUE, ic="aic", trace=FALSE, approximation=FALSE, offset=0, xreg=NULL, method = NULL, nrestart=10, ...) {
   # Length of non-missing interior
   missing <- is.na(x)
-  firstnonmiss <- head(which(!missing),1)
-  lastnonmiss <- tail(which(!missing),1)
+  firstnonmiss <- utils::head(which(!missing),1)
+  lastnonmiss <- utils::tail(which(!missing),1)
   n <- sum(!missing[firstnonmiss:lastnonmiss])
-  m <- frequency(x)
+  m <- stats::frequency(x)
   use.season <- (sum(seasonal) > 0) & m > 0
   diffs <- order[2] + seasonal[2]
   if(is.null(method)){
@@ -908,7 +908,7 @@ search.arima <- function(x, d=NA, D=NA, max.p=5, max.q=5,
                          allowmean=TRUE, parallel=FALSE, num.cores=2, ...) {
   # dataname <- substitute(x)
   ic <- match.arg(ic)
-  m <- frequency(x)
+  m <- stats::frequency(x)
 
   allowdrift <- allowdrift & (d + D) == 1
   allowmean <- allowmean & (d + D) == 0
@@ -1034,7 +1034,7 @@ search.arima <- function(x, d=NA, D=NA, max.p=5, max.q=5,
 # Set up seasonal dummies using Fourier series
 SeasDummy <- function(x) {
   n <- length(x)
-  m <- frequency(x)
+  m <- stats::frequency(x)
   if (m == 1) {
     stop("Non-seasonal data")
   }
@@ -1049,14 +1049,14 @@ SeasDummy <- function(x) {
 
 # CANOVA-HANSEN TEST
 # Largely based on uroot package code for CH.test()
-SD.test <- function(wts, s=frequency(wts)) {
+SD.test <- function(wts, s=stats::frequency(wts)) {
   if (any(is.na(wts))) {
     stop("Series contains missing values. Please choose order of seasonal differencing manually.")
   }
   if (s == 1) {
     stop("Not seasonal data")
   }
-  t0 <- start(wts)
+  t0 <- stats::start(wts)
   N <- length(wts)
   if (N <= s) {
     stop("Insufficient data")
@@ -1064,10 +1064,10 @@ SD.test <- function(wts, s=frequency(wts)) {
   frec <- rep(1, as.integer((s + 1) / 2))
   ltrunc <- round(s * (N / 100) ^ 0.25)
   R1 <- as.matrix(SeasDummy(wts))
-  lmch <- lm(wts ~ R1, na.action = na.exclude) # run the regression : y(i)=mu+f(i)'gamma(i)+e(i)
+  lmch <- stats::lm(wts ~ R1, na.action = stats::na.exclude) # run the regression : y(i)=mu+f(i)'gamma(i)+e(i)
   Fhat <- Fhataux <- matrix(nrow = N, ncol = s - 1)
   for (i in 1:(s - 1))
-    Fhataux[, i] <- R1[, i] * residuals(lmch)
+    Fhataux[, i] <- R1[, i] * stats::residuals(lmch)
   for (i in 1:N) {
     for (n in 1:(s - 1))
       Fhat[i, n] <- sum(Fhataux[1:i, n])

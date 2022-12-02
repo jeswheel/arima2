@@ -20,6 +20,9 @@ length two of the form \eqn{(p, q)}.}
 be either a vector of length 2, or a list with an \code{order} component; if
 a list, aperiod can be included, but it does not affect the function
 output.}
+
+\item{n}{An integer indicating how many sets of ARMA coefficients should be
+sampled.}
 }
 \value{
 a vector of randomly sampled ARMA coefficients.
@@ -54,7 +57,7 @@ circle; if not, we resample the coefficients.
 {
 sample_ARMA_coef(
    order = c(2, 1),
-   seasonal = list(order = c(1, 0, 0), period = 2),
+   seasonal = list(order = c(1, 0), period = 2),
    n = 100
 )
 }

@@ -143,7 +143,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
 
         # Randomly generate AR coefficients, save them to appropriate columns
         out_init[, which_est_cols] <- matrix(
-          runif(nrestart * length(which_est_cols), min = -1, max = 1),
+          stats::runif(nrestart * length(which_est_cols), min = -1, max = 1),
           nrow = nrestart, ncol = length(which_est_cols)
         )
 
@@ -156,7 +156,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
 
           # Generate new AR coefficients where needed
           out_init[bad_ar, which_est_cols] <- matrix(
-            runif(length(bad_ar) * length(which_est_cols), min = -1, max = 1),
+            stats::runif(length(bad_ar) * length(which_est_cols), min = -1, max = 1),
             nrow = length(bad_ar), ncol = length(which_est_cols)
           )
 
@@ -177,7 +177,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
 
         # Generate random starting points for MA coefficients
         out_init[, which_est_cols] <- matrix(
-          runif(nrestart * length(which_est_cols), min = -1, max = 1),
+          stats::runif(nrestart * length(which_est_cols), min = -1, max = 1),
           nrow = nrestart, ncol = length(which_est_cols)
         )
 
@@ -193,7 +193,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
 
         # Randomly generate AR coefficients, save them to appropriate columns
         out_init[, which_est_cols] <- matrix(
-          runif(nrestart * length(which_est_cols), min = -1, max = 1),
+          stats::runif(nrestart * length(which_est_cols), min = -1, max = 1),
           nrow = nrestart, ncol = length(which_est_cols)
         )
 
@@ -206,7 +206,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
 
           # Generate new AR coefficients where needed
           out_init[bad_ar, which_est_cols] <- matrix(
-            runif(length(bad_ar) * length(which_est_cols), min = -1, max = 1),
+            stats::runif(length(bad_ar) * length(which_est_cols), min = -1, max = 1),
             nrow = length(bad_ar), ncol = length(which_est_cols)
           )
 
@@ -224,7 +224,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
 
         # Generate random starting points for MA coefficients
         out_init[, which_est_cols] <- matrix(
-          runif(nrestart * length(which_est_cols), min = -1, max = 1),
+          stats::runif(nrestart * length(which_est_cols), min = -1, max = 1),
           nrow = nrestart, ncol = length(which_est_cols)
         )
 
@@ -237,7 +237,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
 
       # If intercept is fit, stay close to the intercept of init, since it's
       # unlikely to change much.
-      out_init[, ncol(out_init)] <- out_init[, ncol(out_init)] + rnorm(nrestart, sd = 0.05)
+      out_init[, ncol(out_init)] <- out_init[, ncol(out_init)] + stats::rnorm(nrestart, sd = 0.05)
     }
 
     rbind(init, out_init)  # return the random initial values.
@@ -256,7 +256,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
   }
 
   method <- match.arg(method)
-  x <- as.ts(x)
+  x <- stats::as.ts(x)
   if (!is.numeric(x)) {
     stop("'x' must be numeric")
   }
@@ -286,12 +286,12 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
   else stop("'seasonal' must be a list with component 'order'")
   if (is.null(seasonal$period) || is.na(seasonal$period) ||
       seasonal$period == 0)
-    seasonal$period <- frequency(x)
+    seasonal$period <- stats::frequency(x)
   arma <- as.integer(c(order[-2L], seasonal$order[-2L], seasonal$period,
                        order[2L], seasonal$order[2L]))
   narma <- sum(arma[1L:4L])
-  xtsp <- tsp(x)
-  tsp(x) <- NULL
+  xtsp <- stats::tsp(x)
+  stats::tsp(x) <- NULL
   Delta <- 1
   for (i in seq_len(order[2L])) Delta <- Delta %+% c(1, -1)
   for (i in seq_len(seasonal$order[2L])) Delta <- Delta %+%
@@ -354,7 +354,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
     cn <- colnames(xreg)
     orig.xreg <- (ncxreg == 1L) || any(!mask[narma + 1L:ncxreg])
     if (!orig.xreg) {
-      S <- svd(na.omit(xreg))
+      S <- svd(stats::na.omit(xreg))
       xreg <- xreg %*% S$v
     }
     dx <- x
@@ -368,10 +368,10 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
       dxreg <- diff(dxreg, seasonal$period, seasonal$order[2L])
     }
     fit <- if (length(dx) > ncol(dxreg))
-      lm(dx ~ dxreg - 1, na.action = na.omit)
+      stats::lm(dx ~ dxreg - 1, na.action = stats::na.omit)
     else list(rank = 0L)
     if (fit$rank == 0L) {
-      fit <- lm(x ~ xreg - 1, na.action = na.omit)
+      fit <- stats::lm(x ~ xreg - 1, na.action = stats::na.omit)
     }
     isna <- is.na(x) | apply(xreg, 1L, anyNA)
     n.used <- sum(!isna) - length(Delta)
@@ -406,7 +406,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
     res <- if (no.optim)
       list(convergence = 0L, par = numeric(), value = armaCSS(numeric()))
     else{
-      optim(
+      stats::optim(
         init[mask], armaCSS, method = optim.method,
         hessian = TRUE, control = optim.control
       )
@@ -416,7 +416,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
                        res$convergence), domain = NA)
     coef[mask] <- res$par
     trarma <- .Call(C_ARIMA_transPars, coef, arma, FALSE)
-    mod <- makeARIMA(trarma[[1L]], trarma[[2L]], Delta,
+    mod <- stats::makeARIMA(trarma[[1L]], trarma[[2L]], Delta,
                      kappa, SSinit)
     if (ncxreg > 0)
       x <- x - xreg %*% coef[narma + (1L:ncxreg)]
@@ -432,7 +432,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
       res <- if (no.optim)
         list(convergence = 0L, par = numeric(), value = armaCSS(numeric()))
       else {
-        optim(
+        stats::optim(
           init[mask], armaCSS, method = optim.method,
           hessian = FALSE, control = optim.control
         )
@@ -460,7 +460,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
       }
     }
     trarma <- .Call(C_ARIMA_transPars, init, arma, transform.pars)
-    mod <- makeARIMA(trarma[[1L]], trarma[[2L]], Delta,
+    mod <- stats::makeARIMA(trarma[[1L]], trarma[[2L]], Delta,
                      kappa, SSinit)
 
     if (no.optim) {
@@ -492,7 +492,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
           # This shouldn't have any warnings or errors, but just in case...
           suppressWarnings(
             res_temp <- tryCatch(
-              list(fit = optim(
+              list(fit = stats::optim(
                 new_init, armafn, method = optim.method,
                 hessian = TRUE, control = optim.control,
                 trans = as.logical(transform.pars)
@@ -521,7 +521,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
               if (any(coef_temp[mask] != res_temp$fit$par)) {
                 oldcode <- res_temp$fit$convergence
                 res_temp <- tryCatch(
-                  list(fit = optim(
+                  list(fit = stats::optim(
                     coef_temp[mask], armafn, method = optim.method,
                     hessian = TRUE,
                     control = list(maxit = 0L, parscale = optim.control$parscale),
@@ -545,7 +545,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
               numeric()
             else solve(res_temp$fit$hessian * n.used)
             trarma_temp <- .Call(C_ARIMA_transPars, coef_temp, arma, FALSE)
-            mod_temp <- makeARIMA(trarma_temp[[1L]], trarma_temp[[2L]], Delta,
+            mod_temp <- stats::makeARIMA(trarma_temp[[1L]], trarma_temp[[2L]], Delta,
                                   kappa, SSinit)
             val_temp <- if (ncxreg > 0L)
               arimaSS(x - xreg %*% coef_temp[narma + (1L:ncxreg)], mod_temp)
@@ -574,7 +574,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
         # This is equivalent to stats::arima
 
         # Fit ARMA model with default initial values
-        res <- optim(
+        res <- stats::optim(
           init[mask], armafn, method = optim.method,
           hessian = TRUE, control = optim.control,
           trans = as.logical(transform.pars)
@@ -597,7 +597,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
           }
           if (any(coef[mask] != res$par)) {
             oldcode <- res$convergence
-            res <- optim(
+            res <- stats::optim(
               coef[mask], armafn, method = optim.method,
               hessian = TRUE,
               control = list(maxit = 0L, parscale = optim.control$parscale),
@@ -616,7 +616,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
           numeric()
         else solve(res$hessian * n.used)
         trarma <- .Call(C_ARIMA_transPars, coef, arma, FALSE)
-        mod <- makeARIMA(trarma[[1L]], trarma[[2L]], Delta,
+        mod <- stats::makeARIMA(trarma[[1L]], trarma[[2L]], Delta,
                          kappa, SSinit)
         val <- if (ncxreg > 0L)
           arimaSS(x - xreg %*% coef[narma + (1L:ncxreg)], mod)
@@ -654,7 +654,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
     dimnames(var) <- list(nm[mask], nm[mask])
   }
   resid <- val[[2L]]
-  tsp(resid) <- xtsp
+  stats::tsp(resid) <- xtsp
   class(resid) <- "ts"
   structure(list(coef = coef, sigma2 = sigma2, var.coef = var,
                  mask = mask, loglik = -0.5 * value, aic = aic, arma = arma,

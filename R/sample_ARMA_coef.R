@@ -32,6 +32,8 @@
 #'    be either a vector of length 2, or a list with an `order` component; if
 #'    a list, aperiod can be included, but it does not affect the function
 #'    output.
+#' @param n An integer indicating how many sets of ARMA coefficients should be
+#'    sampled.
 #'
 #' @return a vector of randomly sampled ARMA coefficients.
 #'
@@ -39,7 +41,7 @@
 #' @examples {
 #' sample_ARMA_coef(
 #'    order = c(2, 1),
-#'    seasonal = list(order = c(1, 0, 0), period = 2),
+#'    seasonal = list(order = c(1, 0), period = 2),
 #'    n = 100
 #' )
 #' }
@@ -49,7 +51,7 @@ sample_ARMA_coef <- function(
     n = 1
 ) {
 
-  if (class(seasonal) == "list") {
+  if (inherits(seasonal, "list")) {
     if (is.null(seasonal$order)) {
       stop("`seasonal` is missing component `order`.")
     } else if (length(seasonal$order) != 2) {
@@ -129,7 +131,7 @@ sample_ARMA_coef <- function(
 
   } else {  # Odd number
 
-    ar_coef <- runif(1L)
+    ar_coef <- stats::runif(1L)
 
     if (ar > 1L) {
 
@@ -140,7 +142,7 @@ sample_ARMA_coef <- function(
         ar_inv_roots_conj <- Conj(ar_inv_roots)
 
         ar_coef <- Re(
-          .roots2poly(c(runif(1), ar_inv_roots, ar_inv_roots_conj), type = 'ar')
+          .roots2poly(c(stats::runif(1), ar_inv_roots, ar_inv_roots_conj), type = 'ar')
         )
       }
     }
@@ -161,7 +163,7 @@ sample_ARMA_coef <- function(
 
   } else {  # Odd number
 
-    ma_coef <- runif(1L)
+    ma_coef <- stats::runif(1L)
 
     if (ma > 1L) {
 
@@ -173,7 +175,7 @@ sample_ARMA_coef <- function(
 
         ma_coef <- Re(
           .roots2poly(
-            c(runif(1), ma_inv_roots, ma_inv_roots_conj),
+            c(stats::runif(1), ma_inv_roots, ma_inv_roots_conj),
             type = 'ma'
           )
         )
@@ -196,7 +198,7 @@ sample_ARMA_coef <- function(
     }
 
   } else {  # Odd number
-    ar_seas_coef <- runif(1L)
+    ar_seas_coef <- stats::runif(1L)
 
     if (ar_seas > 1L) {
 
@@ -208,7 +210,7 @@ sample_ARMA_coef <- function(
 
         ar_seas_coef <- Re(
           .roots2poly(
-            c(runif(1), ar_seas_inv_roots, ar_seas_inv_roots_conj),
+            c(stats::runif(1), ar_seas_inv_roots, ar_seas_inv_roots_conj),
             type = 'ar')
         )
 
@@ -236,7 +238,7 @@ sample_ARMA_coef <- function(
 
   } else {  # Odd number
 
-    ma_seas_coef <- runif(1L)
+    ma_seas_coef <- stats::runif(1L)
 
     if (ma_seas > 1L) {
 
@@ -248,7 +250,7 @@ sample_ARMA_coef <- function(
 
         ma_seas_coef <- Re(
           .roots2poly(
-            c(runif(1), ma_seas_inv_roots, ma_seas_inv_roots_conj),
+            c(stats::runif(1), ma_seas_inv_roots, ma_seas_inv_roots_conj),
             type = 'ma'
           )
         )
@@ -257,7 +259,7 @@ sample_ARMA_coef <- function(
   }
 
   if (!missing(intercept)) {
-    c(ar_coef, ma_coef, ar_seas_coef, ma_seas_coef, rnorm(1, intercept, 0.05))
+    c(ar_coef, ma_coef, ar_seas_coef, ma_seas_coef, stats::rnorm(1, intercept, 0.05))
   } else {
     c(ar_coef, ma_coef, ar_seas_coef, ma_seas_coef)
   }
@@ -323,11 +325,11 @@ sample_ARMA_coef <- function(
 .sample_inv_roots <- function(n, type = 'beta') {
 
   if (type == 'beta') {
-    R <- rbeta(n, 2.5, 4)
-    Theta <- pi * runif(n)
+    R <- stats::rbeta(n, 2.5, 4)
+    Theta <- pi * stats::runif(n)
   } else {
-    R <- runif(n)
-    Theta <- pi * runif(n)
+    R <- stats::runif(n)
+    Theta <- pi * stats::runif(n)
   }
 
   complex(real = R * cos(Theta), imaginary = R * sin(Theta))
