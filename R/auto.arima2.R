@@ -1,6 +1,8 @@
 #' Auto Arima 2
 #' @inherit forecast::auto.arima
 #' @param nrestart number of random restarts for arima2 function.
+#' @examples
+#' auto.arima2(presidents)
 #' @export
 auto.arima2 = function (y, nrestart = 10, d = NA, D = NA, max.p = 5, max.q = 5, max.P = 2,
           max.Q = 2, max.order = 5, max.d = 2, max.D = 1, start.p = 2,
@@ -15,6 +17,7 @@ auto.arima2 = function (y, nrestart = 10, d = NA, D = NA, max.p = 5, max.q = 5, 
 {
 
   ndiffs <- utils::getFromNamespace("ndiffs", "forecast")
+  nsdiffs <- utils::getFromNamespace("nsdiffs", "forecast")
   fitted.Arima <- utils::getFromNamespace("fitted.Arima", "forecast")
   UndoWhichModels <- utils::getFromNamespace("UndoWhichModels", "forecast")
   WhichModels <- utils::getFromNamespace("WhichModels", "forecast")

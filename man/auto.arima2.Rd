@@ -174,8 +174,7 @@ There are also some other minor variations to the algorithm described in
 Hyndman and Khandakar (2008).
 }
 \examples{
-fit <- auto.arima(WWWusage)
-plot(forecast(fit,h=20))
+auto.arima2(presidents)
 }
 \references{
 Hyndman, RJ and Khandakar, Y (2008) "Automatic time series

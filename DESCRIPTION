@@ -5,7 +5,8 @@ Authors@R:
     c(
     person("Noel", "McAllister", email = "noelmcp@umich.edu", role = "aut"),
     person("Dhajanae", "Sylvertooth", email = "dsylvert@umich.edu", role = "aut"),
-    person("Jesse", "Wheeler", email = "jeswheel@umich.edu", role = c("aut", "cre")))
+    person("Jesse", "Wheeler", email = "jeswheel@umich.edu", role = c("aut", "cre")),
+    person("Edward", "Ionides", role = "ctb"))
 Description: This package provides additional useful interfaces for ARIMA, 
   and more generally, time series modeling in R. One important function in 
   this package is arima2, which fits an ARIMA model to univariate time series
