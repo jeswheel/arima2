@@ -23,4 +23,5 @@ Suggests:
 Config/testthat/edition: 3
 Imports: 
     forecast,
+    ggplot2,
     methods
