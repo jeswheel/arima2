@@ -4,10 +4,10 @@
 \alias{plot.Arima2}
 \title{Plot \code{Arima2} object}
 \usage{
-\method{plot}{Arima2}(object, ...)
+\method{plot}{Arima2}(x, ...)
 }
 \arguments{
-\item{object}{An \code{Arima2} object.}
+\item{x}{An \code{Arima2} object.}
 
 \item{...}{All inputs to the plot function}
 }
