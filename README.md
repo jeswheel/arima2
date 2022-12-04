@@ -78,9 +78,9 @@ log-likelihood units.
 
 ## TODO:
 
-- [x] Implement `arima2`
-- [ ] Create simulate function for ARIMA models.
-- [ ] (Dhajanae) `ggplot2` figures for ARIMA objects
+- [x] Implement `arima2`.
+- [ ] Create simulate function for `Arima2` S3 objects.
+- [ ] (Dhajanae) `ggplot2` figures for `Arima2` S3 objects.
 - [x] (Noel) Create function that makes AIC table.
 - [x] (Noel)`auto.arima2:` implements that `auto.arima` function using
   `arima2`.
