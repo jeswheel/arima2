@@ -2,17 +2,31 @@
 % Please edit documentation in R/arima2Table.R
 \name{aicTable}
 \alias{aicTable}
-\title{Construct table of AIC for all combinations 0<=p<=P and 0<=q<=Q}
+\title{ARIMA AIC table}
 \usage{
 aicTable(data, P, Q, D = 0)
 }
 \arguments{
-\item{data}{a time series object}
+\item{data}{a time series object, or a dataset that can be used as input into
+the \link{arima2} function.}
 
-\item{P}{a positive integer value}
+\item{P}{a positive integer value representing the maximum number of AR
+coefficients that should be included in the table.}
 
-\item{Q}{a positive integer value}
+\item{Q}{a positive integer value representing the maximum number of MA
+coefficients that should be included in the table.}
+
+\item{D}{a positive integer value representing the degree of differencing
+to be used for each \eqn{ARMA(p, q)} model.}
 }
 \description{
 Construct table of AIC for all combinations 0<=p<=P and 0<=q<=Q
+}
+\details{
+This function creates an AIC table for ARMA models of varying sizes.
+Each row for the table corresponds to a different AR value, and each column
+of the table corresponds to a different MA value.
+}
+\examples{
+aicTable(presidents, 3, 2)
 }

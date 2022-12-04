@@ -3,6 +3,7 @@
 S3method(plot,Arima2)
 S3method(summary,Arima)
 export(ARMApolyroots)
+export(aicTable)
 export(arima2)
 export(auto.arima2)
 export(is.constant)
