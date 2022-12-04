@@ -15,6 +15,29 @@ auto.arima2 = function (y, nrestart = 10, d = NA, D = NA, max.p = 5, max.q = 5, 
           allowdrift = TRUE, allowmean = TRUE, lambda = NULL, biasadj = FALSE,
           parallel = FALSE, num.cores = 2, x = y, ...)
 {
+  #  This function is based on the auto.arima function of the forecast package
+  #  of R. Below the copright statement of the auto.arima function is reproduced.
+  #
+  #  Part of the forecast package, https://cran.r-project.org/web/packages/forecast/index.html
+  #
+  #  Copyright (C) 2007 Free Software Foundation
+  #
+  #  This program is free software; you can redistribute it and/or modify
+  #  it under the terms of the GNU General Public License as published by
+  #  the Free Software Foundation; either version 2 of the License, or
+  #  (at your option) any later version.
+  #
+  #  This program is distributed in the hope that it will be useful,
+  #  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  #  GNU General Public License for more details.
+  #
+  #  A copy of the GNU General Public License is available at
+  #  http://www.r-project.org/Licenses/
+
+  #
+  # (auto.arima2) Date: Nov 30, 2022
+  # Revised:
 
   ndiffs <- utils::getFromNamespace("ndiffs", "forecast")
   nsdiffs <- utils::getFromNamespace("nsdiffs", "forecast")
