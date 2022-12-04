@@ -14,7 +14,7 @@ improves on the functionality of the `stats::arima` method, as it has
 the potential to increase the likelihood of the final output model. By
 design, the function cannot result in models with lower likelihoods than
 that of the `stats::arima` function. The potential for increased model
-likelihoods is obtained at the cost of computational efficiency, as the
+likelihoods is obtained at the cost of computational efficiency. The
 function is order $O(n)$ times slower than the `stats::arima` function,
 where $n$ is the number of random restarts. Because the estimation of
 ARIMA models takes only a fraction of a second, we are of the opinion
