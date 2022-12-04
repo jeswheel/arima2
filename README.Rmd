@@ -74,7 +74,7 @@ For this particular model and dataset, the random restart algorithm implemented 
 
 ## TODO:
 
-- [x] Implement `arima2`.
+- [x] Implement `arima2`. 
 - [ ] Create simulate function for `Arima2` S3 objects.
 - [ ] (Dhajanae) `ggplot2` figures for `Arima2` S3 objects.
 - [x] (Noel) Create function that makes AIC table. 
