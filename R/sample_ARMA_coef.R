@@ -73,7 +73,7 @@ sample_ARMA_coef <- function(
     c(order, seasonal, 1L, 0L, 0L)
   )
 
-  res_names <- 0
+  res_names <- c()
 
   if (order[1L] != 0) {
     res_names <- paste0("ar", 1:order[1L])

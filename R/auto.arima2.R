@@ -923,7 +923,7 @@ checkarima <- function(object) {
 #'
 #'
 #' @param x object to be tested
-#' @export
+#' @noRd
 is.constant <- function(x) {
   x <- as.numeric(x)
   y <- rep(x[1], length(x))
