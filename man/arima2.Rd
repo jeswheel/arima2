@@ -14,7 +14,7 @@ arima2(
   transform.pars = TRUE,
   fixed = NULL,
   init = NULL,
-  method = c("CSS-ML", "ML", "CSS"),
+  method = c("CSS-ML", "ML"),
   n.cond,
   SSinit = c("Gardner1980", "Rossignol2011"),
   optim.method = "BFGS",
@@ -83,10 +83,9 @@ nrestart = 0L, then the function is equivalent to \code{\link[stats:arima]{stats
     regression coefficients.  Values already specified in \code{fixed}
     will be ignored.}
 
-\item{method}{fitting method: maximum likelihood or minimize
-    conditional sum-of-squares.  The default (unless there are missing
-    values) is to use conditional-sum-of-squares to find starting
-    values, then maximum likelihood.  Can be abbreviated.}
+\item{method}{Fitting method. The default (unless there are missing values)
+is to use conditional-sum-of-squares to find starting values, then
+maximum likelihood.}
 
 \item{n.cond}{only used if fitting by conditional-sum-of-squares: the
     number of initial observations to ignore.  It will be ignored if

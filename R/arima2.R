@@ -6,6 +6,9 @@
 #'
 #' @param nrestart Number of random restarts to use in fitting the model. If
 #'    nrestart = 0L, then the function is equivalent to [stats::arima()].
+#' @param method Fitting method. The default (unless there are missing values)
+#'    is to use conditional-sum-of-squares to find starting values, then
+#'    maximum likelihood.
 #' @inheritParams stats::arima
 #' @inherit stats::arima return
 #' @export
@@ -17,7 +20,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
                    xreg = NULL, include.mean = TRUE, nrestart = 10,
                    transform.pars = TRUE,
                    fixed = NULL, init = NULL,
-                   method = c("CSS-ML", "ML", "CSS"),
+                   method = c("CSS-ML", "ML"),
                    n.cond,
                    SSinit = c("Gardner1980", "Rossignol2011"),
                    optim.method = "BFGS", optim.control = list(),
@@ -45,7 +48,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
   #  http://www.r-project.org/Licenses/
 
   #
-  # (arima2) Date: Nov 18, 2022
+  # (arima2) Date: Dec 6, 2022
   # Revised:
 
   C_TSconv <- utils::getFromNamespace("C_TSconv", "stats")
@@ -324,15 +327,15 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
       anyna <- anyna || anyNA(xreg)
     if (anyna)
       method <- "ML"
-  }
-  if (method == "CSS" || method == "CSS-ML") {
+
     ncond <- order[2L] + seasonal$order[2L] * seasonal$period
     ncond1 <- order[1L] + seasonal$period * seasonal$order[1L]
     ncond <- ncond + if (!missing(n.cond))
       max(n.cond, ncond1)
     else ncond1
-  }
-  else ncond <- 0
+
+  } else ncond <- 0
+
   if (is.null(fixed))
     fixed <- rep(NA_real_, narma + ncxreg)
   else if (length(fixed) != narma + ncxreg)
@@ -402,245 +405,222 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
   coef <- as.double(fixed)
   if (!("parscale" %in% names(optim.control)))
     optim.control$parscale <- parscale[mask]
-  if (method == "CSS") {
+
+  #### START
+
+  if (method == "CSS-ML") {
     res <- if (no.optim)
       list(convergence = 0L, par = numeric(), value = armaCSS(numeric()))
-    else{
+    else {
       stats::optim(
         init[mask], armaCSS, method = optim.method,
-        hessian = TRUE, control = optim.control
+        hessian = FALSE, control = optim.control
       )
     }
-    if (res$convergence > 0)
-      warning(gettextf("possible convergence problem: optim gave code = %d",
-                       res$convergence), domain = NA)
-    coef[mask] <- res$par
-    trarma <- .Call(C_ARIMA_transPars, coef, arma, FALSE)
-    mod <- stats::makeARIMA(trarma[[1L]], trarma[[2L]], Delta,
-                     kappa, SSinit)
-    if (ncxreg > 0)
-      x <- x - xreg %*% coef[narma + (1L:ncxreg)]
-    arimaSS(x, mod)
-    val <- .Call(C_ARIMA_CSS, x, arma, trarma[[1L]], trarma[[2L]],
-                 as.integer(ncond), TRUE)
-    sigma2 <- val[[1L]]
-    var <- if (no.optim)
-      numeric()
-    else solve(res$hessian * n.used)
+
+    if (res$convergence == 0)
+      init[mask] <- res$par
+    if (arma[1L] > 0)
+      if (!.arCheck(init[1L:arma[1L]]))
+        stop("non-stationary AR part from CSS")
+    if (arma[3L] > 0)
+      if (!.arCheck(init[sum(arma[1L:2L]) + 1L:arma[3L]]))
+        stop("non-stationary seasonal AR part from CSS")
+    ncond <- 0L
+  }
+  if (transform.pars) {
+    init <- .Call(C_ARIMA_Invtrans, init, arma)
+    if (arma[2L] > 0) {
+      ind <- arma[1L] + 1L:arma[2L]
+      init[ind] <- maInvert(init[ind])
+    }
+    if (arma[4L] > 0) {
+      ind <- sum(arma[1L:3L]) + 1L:arma[4L]
+      init[ind] <- maInvert(init[ind])
+    }
+  }
+  trarma <- .Call(C_ARIMA_transPars, init, arma, transform.pars)
+  mod <- stats::makeARIMA(trarma[[1L]], trarma[[2L]], Delta,
+                          kappa, SSinit)
+
+  if (no.optim) {
+    res <- list(
+      convergence = 0, par = numeric(),
+      value = armafn(numeric(),as.logical(transform.pars))
+    )
   } else {
-    if (method == "CSS-ML") {
-      res <- if (no.optim)
-        list(convergence = 0L, par = numeric(), value = armaCSS(numeric()))
-      else {
-        stats::optim(
-          init[mask], armaCSS, method = optim.method,
-          hessian = FALSE, control = optim.control
-        )
-      }
 
-      if (res$convergence == 0)
-        init[mask] <- res$par
-      if (arma[1L] > 0)
-        if (!.arCheck(init[1L:arma[1L]]))
-          stop("non-stationary AR part from CSS")
-      if (arma[3L] > 0)
-        if (!.arCheck(init[sum(arma[1L:2L]) + 1L:arma[3L]]))
-          stop("non-stationary seasonal AR part from CSS")
-      ncond <- 0L
-    }
-    if (transform.pars) {
-      init <- .Call(C_ARIMA_Invtrans, init, arma)
-      if (arma[2L] > 0) {
-        ind <- arma[1L] + 1L:arma[2L]
-        init[ind] <- maInvert(init[ind])
-      }
-      if (arma[4L] > 0) {
-        ind <- sum(arma[1L:3L]) + 1L:arma[4L]
-        init[ind] <- maInvert(init[ind])
-      }
-    }
-    trarma <- .Call(C_ARIMA_transPars, init, arma, transform.pars)
-    mod <- stats::makeARIMA(trarma[[1L]], trarma[[2L]], Delta,
-                     kappa, SSinit)
+    if (nrestart != 0L) {
 
-    if (no.optim) {
-      res <- list(
-        convergence = 0, par = numeric(),
-        value = armafn(numeric(),as.logical(transform.pars))
-      )
-    } else {
+      best_val <- Inf
+      coef_orig <- coef
+      inits <- matrix(nrow = nrestart, ncol = length(init))
+      Errs <- c()
+      Err_MSG <- list()
 
-      if (nrestart != 0L) {
+      # Random Restart Algorithm.
+      for (i in 1:nrestart) {
 
-        best_val <- Inf
-        coef_orig <- coef
-        inits <- matrix(nrow = nrestart, ncol = length(init))
-        Errs <- c()
-        Err_MSG <- list()
+        if (i == 1L) {
+          new_init <- init
+        } else if (include.mean) {
+          new_init <- .sample_ARMA_coef(arma, init[length(init)])
+        } else {
+          new_init <- .sample_ARMA_coef(arma)
+        }
 
-        # Random Restart Algorithm.
-        for (i in 1:nrestart) {
+        inits[i, ] <- new_init
 
-          if (i == 1L) {
-            new_init <- init
-          } else if (include.mean) {
-            new_init <- .sample_ARMA_coef(arma, init[length(init)])
-          } else {
-            new_init <- .sample_ARMA_coef(arma)
-          }
-
-          inits[i, ] <- new_init
-
-          # This shouldn't have any warnings or errors, but just in case...
-          suppressWarnings(
-            res_temp <- tryCatch(
-              list(fit = stats::optim(
-                new_init, armafn, method = optim.method,
-                hessian = TRUE, control = optim.control,
-                trans = as.logical(transform.pars)
-              ), e = 0),
-              error = function(e) list(fit = list(value = Inf), e = 1, mes = e)
-              # warning = function(w) list(fit = list(value = Inf), w = 1, e = 0)
-            )
+        suppressWarnings(
+          res_temp <- tryCatch(
+            list(fit = stats::optim(
+              new_init, armafn, method = optim.method,
+              hessian = TRUE, control = optim.control,
+              trans = as.logical(transform.pars)
+            ), e = 0),
+            error = function(e) list(fit = list(value = Inf), e = 1, mes = e)
+            # warning = function(w) list(fit = list(value = Inf), w = 1, e = 0)
           )
+        )
 
-          if (res_temp$e == 1) {
+        if (res_temp$e == 1) {
+          Errs <- c(Errs, i)
+          Err_MSG <- c(Err_MSG, res_temp$mes)
+        }
+
+        # If there were no issues with fitting from the starting point,
+        # then check if it results in a better fit.
+        if (res_temp$e != 1 && length(res_temp$fit$par) > 0) {
+          coef_temp <- coef_orig
+          coef_temp[mask] <- res_temp$fit$par
+          if (transform.pars) {
+            if (arma[2L] > 0L) {
+              ind <- arma[1L] + 1L:arma[2L]
+              if (all(mask[ind]))
+                coef_temp[ind] <- maInvert(coef_temp[ind])
+            }
+            if (arma[4L] > 0L) {
+              ind <- sum(arma[1L:3L]) + 1L:arma[4L]
+              if (all(mask[ind]))
+                coef_temp[ind] <- maInvert(coef_temp[ind])
+            }
+            if (any(coef_temp[mask] != res_temp$fit$par)) {
+              oldcode <- res_temp$fit$convergence
+              res_temp <- tryCatch(
+                list(fit = stats::optim(
+                  coef_temp[mask], armafn, method = optim.method,
+                  hessian = TRUE,
+                  control = list(maxit = 0L, parscale = optim.control$parscale),
+                  trans = TRUE
+                ), e = 0),
+                error = function(e) list(fit = list(value = Inf, par = numeric(length(coef_temp[mask]))), e = 1, mes = e)
+              )
+
+              res_temp$fit$convergence <- oldcode
+              coef_temp[mask] <- res_temp$fit$par
+            }
+            A_temp <- .Call(C_ARIMA_Gradtrans, as.double(coef_temp), arma)
+            A_temp <- A_temp[mask, mask]
+            var_temp <- tryCatch(
+              crossprod(A_temp, solve(res_temp$fit$hessian * n.used, A_temp)),
+              error = function(e) numeric()
+            )
+            coef_temp <- .Call(C_ARIMA_undoPars, coef_temp, arma)
+          }
+          else var_temp <- if (no.optim)
+            numeric()
+          else solve(res_temp$fit$hessian * n.used)
+          trarma_temp <- .Call(C_ARIMA_transPars, coef_temp, arma, FALSE)
+          mod_temp <- stats::makeARIMA(trarma_temp[[1L]], trarma_temp[[2L]], Delta,
+                                       kappa, SSinit)
+          val_temp <- if (ncxreg > 0L)
+            arimaSS(x - xreg %*% coef_temp[narma + (1L:ncxreg)], mod_temp)
+          else arimaSS(x, mod_temp)
+          sigma2_temp <- val_temp[[1L]][1L]/n.used
+
+          value_temp <- 2 * n.used * res_temp$fit$value + n.used + n.used * log(2 * pi)
+
+          if (res_temp$e == 1 || length(var) < 1) {
             Errs <- c(Errs, i)
             Err_MSG <- c(Err_MSG, res_temp$mes)
           }
 
-          # If there were no issues with fitting from the starting point,
-          # then check if it results in a better fit.
-          if (res_temp$e != 1 && length(res_temp$fit$par) > 0) {
-            coef_temp <- coef_orig
-            coef_temp[mask] <- res_temp$fit$par
-            if (transform.pars) {
-              if (arma[2L] > 0L) {
-                ind <- arma[1L] + 1L:arma[2L]
-                if (all(mask[ind]))
-                  coef_temp[ind] <- maInvert(coef_temp[ind])
-              }
-              if (arma[4L] > 0L) {
-                ind <- sum(arma[1L:3L]) + 1L:arma[4L]
-                if (all(mask[ind]))
-                  coef_temp[ind] <- maInvert(coef_temp[ind])
-              }
-              if (any(coef_temp[mask] != res_temp$fit$par)) {
-                oldcode <- res_temp$fit$convergence
-                res_temp <- tryCatch(
-                  list(fit = stats::optim(
-                    coef_temp[mask], armafn, method = optim.method,
-                    hessian = TRUE,
-                    control = list(maxit = 0L, parscale = optim.control$parscale),
-                    trans = TRUE
-                  ), e = 0),
-                  error = function(e) list(fit = list(value = Inf, par = numeric(length(coef_temp[mask]))), e = 1, mes = e)
-                )
+          if (value_temp < best_val && length(var) >= 1 && res_temp$e == 0) {
+            best_val <- value_temp
 
-                res_temp$fit$convergence <- oldcode
-                coef_temp[mask] <- res_temp$fit$par
-              }
-              A_temp <- .Call(C_ARIMA_Gradtrans, as.double(coef_temp), arma)
-              A_temp <- A_temp[mask, mask]
-              var_temp <- tryCatch(
-                crossprod(A_temp, solve(res_temp$fit$hessian * n.used, A_temp)),
-                error = function(e) numeric()
-              )
-              coef_temp <- .Call(C_ARIMA_undoPars, coef_temp, arma)
-            }
-            else var_temp <- if (no.optim)
-              numeric()
-            else solve(res_temp$fit$hessian * n.used)
-            trarma_temp <- .Call(C_ARIMA_transPars, coef_temp, arma, FALSE)
-            mod_temp <- stats::makeARIMA(trarma_temp[[1L]], trarma_temp[[2L]], Delta,
-                                  kappa, SSinit)
-            val_temp <- if (ncxreg > 0L)
-              arimaSS(x - xreg %*% coef_temp[narma + (1L:ncxreg)], mod_temp)
-            else arimaSS(x, mod_temp)
-            sigma2_temp <- val_temp[[1L]][1L]/n.used
-
-            value_temp <- 2 * n.used * res_temp$fit$value + n.used + n.used * log(2 * pi)
-
-            if (res_temp$e == 1 || length(var) < 1) {
-              Errs <- c(Errs, i)
-              Err_MSG <- c(Err_MSG, res_temp$mes)
-            }
-
-            if (value_temp < best_val && length(var) >= 1 && res_temp$e == 0) {
-              best_val <- value_temp
-
-              coef <- coef_temp
-              res <- res_temp$fit
-              A <- A_temp
-              var <- var_temp
-              trarma <- trarma_temp
-              mod <- mod_temp
-              val <- val_temp
-              sigma2 <- sigma2_temp
-              value <- value_temp
-            }
+            coef <- coef_temp
+            res <- res_temp$fit
+            A <- A_temp
+            var <- var_temp
+            trarma <- trarma_temp
+            mod <- mod_temp
+            val <- val_temp
+            sigma2 <- sigma2_temp
+            value <- value_temp
           }
         }
-      } else {  # nrestart == 0L
-
-        # This is equivalent to stats::arima
-
-        # Fit ARMA model with default initial values
-        res <- stats::optim(
-          init[mask], armafn, method = optim.method,
-          hessian = TRUE, control = optim.control,
-          trans = as.logical(transform.pars)
-        )
-
-        if (res$convergence > 0)
-          warning(gettextf("possible convergence problem: optim gave code = %d",
-                           res$convergence), domain = NA)
-        coef[mask] <- res$par
-        if (transform.pars) {
-          if (arma[2L] > 0L) {
-            ind <- arma[1L] + 1L:arma[2L]
-            if (all(mask[ind]))
-              coef[ind] <- maInvert(coef[ind])
-          }
-          if (arma[4L] > 0L) {
-            ind <- sum(arma[1L:3L]) + 1L:arma[4L]
-            if (all(mask[ind]))
-              coef[ind] <- maInvert(coef[ind])
-          }
-          if (any(coef[mask] != res$par)) {
-            oldcode <- res$convergence
-            res <- stats::optim(
-              coef[mask], armafn, method = optim.method,
-              hessian = TRUE,
-              control = list(maxit = 0L, parscale = optim.control$parscale),
-              trans = TRUE
-            )
-            res$convergence <- oldcode
-            coef[mask] <- res$par
-          }
-          A <- .Call(C_ARIMA_Gradtrans, as.double(coef), arma)
-          A <- A[mask, mask]
-          var <- crossprod(A, solve(res$hessian * n.used,
-                                    A))
-          coef <- .Call(C_ARIMA_undoPars, coef, arma)
-        }
-        else var <- if (no.optim)
-          numeric()
-        else solve(res$hessian * n.used)
-        trarma <- .Call(C_ARIMA_transPars, coef, arma, FALSE)
-        mod <- stats::makeARIMA(trarma[[1L]], trarma[[2L]], Delta,
-                         kappa, SSinit)
-        val <- if (ncxreg > 0L)
-          arimaSS(x - xreg %*% coef[narma + (1L:ncxreg)], mod)
-        else arimaSS(x, mod)
-        sigma2 <- val[[1L]][1L]/n.used
       }
+    } else {  # nrestart == 0L
+
+      # This is equivalent to stats::arima
+
+      # Fit ARMA model with default initial values
+      res <- stats::optim(
+        init[mask], armafn, method = optim.method,
+        hessian = TRUE, control = optim.control,
+        trans = as.logical(transform.pars)
+      )
+
+      if (res$convergence > 0)
+        warning(gettextf("possible convergence problem: optim gave code = %d",
+                         res$convergence), domain = NA)
+      coef[mask] <- res$par
+      if (transform.pars) {
+        if (arma[2L] > 0L) {
+          ind <- arma[1L] + 1L:arma[2L]
+          if (all(mask[ind]))
+            coef[ind] <- maInvert(coef[ind])
+        }
+        if (arma[4L] > 0L) {
+          ind <- sum(arma[1L:3L]) + 1L:arma[4L]
+          if (all(mask[ind]))
+            coef[ind] <- maInvert(coef[ind])
+        }
+        if (any(coef[mask] != res$par)) {
+          oldcode <- res$convergence
+          res <- stats::optim(
+            coef[mask], armafn, method = optim.method,
+            hessian = TRUE,
+            control = list(maxit = 0L, parscale = optim.control$parscale),
+            trans = TRUE
+          )
+          res$convergence <- oldcode
+          coef[mask] <- res$par
+        }
+        A <- .Call(C_ARIMA_Gradtrans, as.double(coef), arma)
+        A <- A[mask, mask]
+        var <- crossprod(A, solve(res$hessian * n.used,
+                                  A))
+        coef <- .Call(C_ARIMA_undoPars, coef, arma)
+      }
+      else var <- if (no.optim)
+        numeric()
+      else solve(res$hessian * n.used)
+      trarma <- .Call(C_ARIMA_transPars, coef, arma, FALSE)
+      mod <- stats::makeARIMA(trarma[[1L]], trarma[[2L]], Delta,
+                              kappa, SSinit)
+      val <- if (ncxreg > 0L)
+        arimaSS(x - xreg %*% coef[narma + (1L:ncxreg)], mod)
+      else arimaSS(x, mod)
+      sigma2 <- val[[1L]][1L]/n.used
     }
   }
+
+
+  #### -end
+
   value <- 2 * n.used * res$value + n.used + n.used * log(2 * pi)
-  aic <- if (method != "CSS")
-    value + 2 * sum(mask) + 2
-  else NA
+  aic <- value + 2 * sum(mask) + 2
   nm <- NULL
   if (arma[1L] > 0L)
     nm <- c(nm, paste0("ar", 1L:arma[1L]))
