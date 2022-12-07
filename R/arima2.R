@@ -540,12 +540,12 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
 
           value_temp <- 2 * n.used * res_temp$fit$value + n.used + n.used * log(2 * pi)
 
-          if (res_temp$e == 1 || length(var) < 1) {
+          if (res_temp$e == 1 || length(var_temp) < 1) {
             Errs <- c(Errs, i)
             Err_MSG <- c(Err_MSG, res_temp$mes)
           }
 
-          if (value_temp < best_val && length(var) >= 1 && res_temp$e == 0) {
+          if (value_temp < best_val && length(var_temp) >= 1 && res_temp$e == 0) {
             best_val <- value_temp
 
             coef <- coef_temp
@@ -563,7 +563,6 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
     } else {  # nrestart == 0L
 
       # This is equivalent to stats::arima
-
       # Fit ARMA model with default initial values
       res <- stats::optim(
         init[mask], armafn, method = optim.method,
@@ -615,7 +614,6 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
       sigma2 <- val[[1L]][1L]/n.used
     }
   }
-
 
   #### -end
 

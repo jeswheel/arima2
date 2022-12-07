@@ -1,6 +1,6 @@
 Package: arima2
 Title: What the Package Does (One Line, Title Case)
-Version: 1.1.2.9000
+Version: 1.1.2.9001
 Authors@R: 
     c(
     person("Noel", "McAllister", email = "noelmcp@umich.edu", role = "aut"),
