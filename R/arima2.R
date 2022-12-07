@@ -529,7 +529,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
           }
           else var_temp <- if (no.optim)
             numeric()
-          else solve(res_temp$fit$hessian * n.used)
+          else tryCatch(solve(res_temp$fit$hessian * n.used), error = function(e) numeric())
           trarma_temp <- .Call(C_ARIMA_transPars, coef_temp, arma, FALSE)
           mod_temp <- stats::makeARIMA(trarma_temp[[1L]], trarma_temp[[2L]], Delta,
                                        kappa, SSinit)
