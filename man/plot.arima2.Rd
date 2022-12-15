@@ -4,14 +4,16 @@
 \alias{plot.arima2}
 \title{Plot \code{Arima2} object}
 \usage{
-\method{plot}{arima2}(x, title = NULL, tick.lab = NULL, ...)
+\method{plot}{arima2}(x, roots = FALSE, title = NULL, tick.lab = NULL, ...)
 }
 \arguments{
-\item{x}{An \code{Arima2} object.}
+\item{x}{An \code{Arima2} object. This parameter could be an object created using the function \code{arima2()}.}
+
+\item{roots}{Would you instead prefer to plot the roots on a unit circle? Insert logical type here.}
 
 \item{title}{Title of plot}
 
-\item{tick.lab}{Time vector}
+\item{tick.lab}{Time vector of numeric or character/string type.}
 
 \item{...}{Other parameters}
 }
