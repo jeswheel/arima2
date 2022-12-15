@@ -3,13 +3,14 @@
 #' @param x An `Arima2` object.
 #' @param title Title of plot
 #' @param tick.lab Time vector
+#' @param ... Other parameters
 #'
 #' @return plot
-#' @export
+#' @export plot.arima2
 #'
 #' @examples
-#' mod <- arima2.plot(arima2(lh, order = c(1,0,1)))
-arima2.plot <- function(x, title = NULL, tick.lab = NULL) {
+#' mod <- plot.arima2(arima2(lh, order = c(1,0,1)))
+plot.arima2 <- function(x, title = NULL, tick.lab = NULL, ...) {
 
   ### check if tick.lab is left as default
   if(is.null(tick.lab)){
