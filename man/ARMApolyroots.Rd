@@ -26,6 +26,6 @@ correspond to an ARMA model.
 \examples{
 ARMApolyroots(sample_ARMA_coef((order = c(2, 1))), type = "AR")
 
-mod <- arima(lh, order = c(3,0,0))
+mod <- arima2(lh, order = c(3,0,0))
 ARMApolyroots(mod, type = "AR")
 }

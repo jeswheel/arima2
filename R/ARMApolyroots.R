@@ -17,7 +17,7 @@
 #' @examples
 #' ARMApolyroots(sample_ARMA_coef((order = c(2, 1))), type = "AR")
 #'
-#' mod <- arima(lh, order = c(3,0,0))
+#' mod <- arima2(lh, order = c(3,0,0))
 #' ARMApolyroots(mod, type = "AR")
 ARMApolyroots <- function(model, type = c("AR", "MA")) {
   type <- match.arg(type)
