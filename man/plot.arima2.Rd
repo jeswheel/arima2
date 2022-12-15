@@ -7,7 +7,7 @@
 \method{plot}{arima2}(x, roots = FALSE, title = NULL, tick.lab = NULL, ...)
 }
 \arguments{
-\item{x}{An \code{Arima2} object. This parameter could be an object created using the function \code{arima2()}.}
+\item{x}{An \code{Arima2} object. This parameter is an object created using the function \code{arima2()}.}
 
 \item{roots}{Would you instead prefer to plot the roots on a unit circle? Insert logical type here.}
 
@@ -18,11 +18,12 @@
 \item{...}{Other parameters}
 }
 \value{
-plot
+\verb{Arima 2} plot. Type of plot is indicated through \code{roots} parameter.
 }
 \description{
-Plot \code{Arima2} object
+This function plots time series data loaded from an \code{Arima2} object or plots inverse roots of the AR or MA polynomials in a fitted ARIMA model on the complex unit circle. Note: Layers may be added to \code{Arima2} plots using \code{ggplot2}'s plus operator.
 }
 \examples{
 mod <- plot.arima2(arima2(lh, order = c(1,0,1)))
+my.plot <- plot.arima2(x = arima2(lh, order = c(3,0,1)), roots = TRUE)
 }
