@@ -4,18 +4,20 @@
 \alias{plot.Arima2}
 \title{Plot \code{Arima2} object}
 \usage{
-\method{plot}{Arima2}(x, ...)
+\method{plot}{Arima2}(x, title = NULL, tick.lab = NULL)
 }
 \arguments{
 \item{x}{An \code{Arima2} object.}
 
-\item{...}{All inputs to the plot function}
+\item{title}{Title of plot}
+
+\item{tick.lab}{Time vector}
+}
+\value{
+plot
 }
 \description{
-This function plots an \code{Arima2} object.
-}
-\details{
-TODO: This could plot data, data + sims, or roots, roots + data, roots + data + sims.
+Plot \code{Arima2} object
 }
 \examples{
 mod <- plot(arima2(lh, order = c(1,0,1)))
