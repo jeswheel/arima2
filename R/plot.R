@@ -8,16 +8,11 @@
 #' @export
 #'
 #' @examples
-#' mod <- plot(arima2(lh, order = c(1,0,1)))
-plot.Arima2 <- function(x, title = NULL, tick.lab = NULL) {
-
-  ### addressing possible issues with parameter values inputted by user
-  ## important to add because current messages cause debugging difficulty
-  if(length(x$x) != length(tick.lab))stop("The length of data points does not equal the length of time points. Check \"tick.lab\" parameter.")
-
+#' mod <- arima2.plot(arima2(lh, order = c(1,0,1)))
+arima2.plot <- function(x, title = NULL, tick.lab = NULL) {
 
   ### check if tick.lab is left as default
-  else if(is.null(tick.lab)){
+  if(is.null(tick.lab)){
     # x is an ARIMA2 object, x$x contains the data.
     xaxis <- 1:length(x$x)
     yaxis <- x$x
@@ -34,6 +29,8 @@ plot.Arima2 <- function(x, title = NULL, tick.lab = NULL) {
 
   ### check if tick.lab contains numeric values (could be years)
   else if(is.numeric(tick.lab)){
+    ## important to add because current messages cause debugging difficulty
+    if(length(x$x) != length(tick.lab))stop("The length of data points does not equal the length of time points. Check \"tick.lab\" parameter.")
     # x is an ARIMA2 object, x$x contains the data.
     xaxis <- tick.lab
     yaxis <- x$x
@@ -49,6 +46,8 @@ plot.Arima2 <- function(x, title = NULL, tick.lab = NULL) {
 
   ### check if tick.lab contains characters
   else if(!is.numeric(tick.lab)){
+    ## important to add because current messages cause debugging difficulty
+    if(length(x$x) != length(tick.lab))stop("The length of data points does not equal the length of time points. Check \"tick.lab\" parameter.")
     # x is an ARIMA2 object, x$x contains the data.
     xaxis <- tick.lab
     yaxis <- x$x
@@ -61,6 +60,8 @@ plot.Arima2 <- function(x, title = NULL, tick.lab = NULL) {
       plot + ggplot2::labs(title = title)
     }
   }
+
+
   return(plot)
 }
 
