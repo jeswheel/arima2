@@ -6,6 +6,12 @@
 #'
 #' @param nrestart Number of random restarts to use in fitting the model. If
 #'    nrestart = 0L, then the function is equivalent to [stats::arima()].
+#' @param method fitting method: maximum likelihood or minimize conditional
+#'    sum-of-squares. The default (unless there are missing values) is to use
+#'    conditional-sum-of-squares to find starting values, then maximum
+#'    likelihood. Note that the random restart algorithm is only implemented
+#'    for method = "CSS-ML" or method = "ML", as method = "CSS" is not expected
+#'    to maximize the model likelihood.
 #' @inheritParams stats::arima
 #' @inherit stats::arima return
 #' @export
@@ -45,7 +51,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
   #  http://www.r-project.org/Licenses/
 
   #
-  # (arima2) Date: Nov 18, 2022
+  # (arima2) Date: Dec 6, 2022
   # Revised:
 
   C_TSconv <- utils::getFromNamespace("C_TSconv", "stats")
@@ -104,143 +110,6 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
     res <- .Call(C_ARIMA_CSS, x, arma, trarma[[1L]], trarma[[2L]],
                  as.integer(ncond), FALSE)
     0.5 * log(res)
-  }
-
-  maInvert <- function(ma) {
-    q <- length(ma)
-    q0 <- max(which(c(1, ma) != 0)) - 1L
-    if (!q0)
-      return(ma)
-    roots <- polyroot(c(1, ma[1L:q0]))
-    ind <- Mod(roots) < 1
-    if (all(!ind))
-      return(ma)
-    if (q0 == 1)
-      return(c(1/ma[1L], rep.int(0, q - q0)))
-    roots[ind] <- 1/roots[ind]
-    x <- 1
-    for (r in roots) x <- c(x, 0) - c(0, x)/r
-    c(Re(x[-1L]), rep.int(0, q - q0))
-  }
-
-  getInits <- function(arma, init, mask) {
-    # Create matrix that is just the init object repeated, will be modified as
-    # needed.
-    out_init <- matrix(
-      rep(init, nrestart),
-      nrow = nrestart,
-      ncol = length(init),
-      byrow = TRUE
-    )
-
-    if (arma[1L] > 0L) {  # arma[1L] contains number of AR coefficients.
-
-      ar_ind <- 1:arma[1L]  # Get column index of AR coefficients
-
-      if (any(mask[ar_ind])) {  # If not all are fixed, then estimate them.
-        # n_ar <- sum(mask[ar_ind])  # Number of AR terms to estimate
-        which_est_cols <- ar_ind[mask[ar_ind]]  # Of the AR columns, which are estimated.
-
-        # Randomly generate AR coefficients, save them to appropriate columns
-        out_init[, which_est_cols] <- matrix(
-          stats::runif(nrestart * length(which_est_cols), min = -1, max = 1),
-          nrow = nrestart, ncol = length(which_est_cols)
-        )
-
-        # Check if randomly generated AR coefficients make causal model
-        bad_ar <- which(!apply(out_init[, ar_ind, drop = FALSE], 1, .arCheck))
-
-        # Keep generating parameters until all AR coefficients correspond to
-        # a causal model
-        while (length(bad_ar) > 0) {
-
-          # Generate new AR coefficients where needed
-          out_init[bad_ar, which_est_cols] <- matrix(
-            stats::runif(length(bad_ar) * length(which_est_cols), min = -1, max = 1),
-            nrow = length(bad_ar), ncol = length(which_est_cols)
-          )
-
-          # Check if AR coefficients are causal
-          bad_ar <- which(!apply(out_init[, ar_ind, drop = FALSE], 1, .arCheck))
-        }
-      }
-    }
-
-    # ARMA[2L] corresponds to the number of MA coefficients.
-    if (arma[2L] > 0L) {
-
-      # Get the indices for MA coefficients
-      ma_ind <- arma[1L] + 1L:arma[2L]
-
-      if (any(mask[ma_ind])) {  # If not all are fixed, then estimate them.
-        which_est_cols <- ma_ind[mask[ma_ind]]  # Of the MA columns, which are estimated.
-
-        # Generate random starting points for MA coefficients
-        out_init[, which_est_cols] <- matrix(
-          stats::runif(nrestart * length(which_est_cols), min = -1, max = 1),
-          nrow = nrestart, ncol = length(which_est_cols)
-        )
-
-        out_init[, ma_ind] <- t(apply(out_init[, ma_ind, drop = FALSE], 1, maInvert))
-      }
-    }
-
-    if (arma[3L] > 0L) {
-      ar_seas_ind <- sum(arma[1L:2L]) + 1L:arma[3L]
-
-      if (any(mask[ar_seas_ind])) {  # If not all are fixed, then estimate them.
-        which_est_cols <- ar_seas_ind[mask[ar_seas_ind]]  # Of the AR columns, which are estimated.
-
-        # Randomly generate AR coefficients, save them to appropriate columns
-        out_init[, which_est_cols] <- matrix(
-          stats::runif(nrestart * length(which_est_cols), min = -1, max = 1),
-          nrow = nrestart, ncol = length(which_est_cols)
-        )
-
-        # Check if randomly generated AR coefficients correspond to causal model
-        bad_ar <- which(!apply(out_init[, ar_seas_ind, drop = FALSE], 1, .arCheck))
-
-        # Keep generating parameters until all AR coefficients correspond to
-        # a causal model
-        while (length(bad_ar) > 0) {
-
-          # Generate new AR coefficients where needed
-          out_init[bad_ar, which_est_cols] <- matrix(
-            stats::runif(length(bad_ar) * length(which_est_cols), min = -1, max = 1),
-            nrow = length(bad_ar), ncol = length(which_est_cols)
-          )
-
-          # Check if AR coefficients are causal
-          bad_ar <- which(!apply(out_init[, ar_seas_ind, drop = FALSE], 1, .arCheck))
-        }
-      }
-    }
-
-    if (arma[4L] > 0L) {
-      ma_seas_ind <- sum(arma[1L:3L]) + 1L:arma[4L]
-
-      if (any(mask[ma_seas_ind])) {  # If not all are fixed, then randomly initialize them.
-        which_est_cols <- ma_seas_ind[mask[ma_seas_ind]]  # Of the MA columns, which are estimated.
-
-        # Generate random starting points for MA coefficients
-        out_init[, which_est_cols] <- matrix(
-          stats::runif(nrestart * length(which_est_cols), min = -1, max = 1),
-          nrow = nrestart, ncol = length(which_est_cols)
-        )
-
-        out_init[, ma_seas_ind] <- t(apply(out_init[, ma_seas_ind, drop = FALSE], 1, maInvert))
-      }
-    }
-
-    # Check if the model has an intercept, and if the intercept is estimated.
-    if (include.mean && mask[length(mask)]) {
-
-      # If intercept is fit, stay close to the intercept of init, since it's
-      # unlikely to change much.
-      out_init[, ncol(out_init)] <- out_init[, ncol(out_init)] + stats::rnorm(nrestart, sd = 0.05)
-    }
-
-    rbind(init, out_init)  # return the random initial values.
   }
 
   series <- deparse1(substitute(x))
@@ -452,11 +321,11 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
       init <- .Call(C_ARIMA_Invtrans, init, arma)
       if (arma[2L] > 0) {
         ind <- arma[1L] + 1L:arma[2L]
-        init[ind] <- maInvert(init[ind])
+        init[ind] <- .maInvert(init[ind])
       }
       if (arma[4L] > 0) {
         ind <- sum(arma[1L:3L]) + 1L:arma[4L]
-        init[ind] <- maInvert(init[ind])
+        init[ind] <- .maInvert(init[ind])
       }
     }
     trarma <- .Call(C_ARIMA_transPars, init, arma, transform.pars)
@@ -518,12 +387,12 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
               if (arma[2L] > 0L) {
                 ind <- arma[1L] + 1L:arma[2L]
                 if (all(mask[ind]))
-                  coef_temp[ind] <- maInvert(coef_temp[ind])
+                  coef_temp[ind] <- .maInvert(coef_temp[ind])
               }
               if (arma[4L] > 0L) {
                 ind <- sum(arma[1L:3L]) + 1L:arma[4L]
                 if (all(mask[ind]))
-                  coef_temp[ind] <- maInvert(coef_temp[ind])
+                  coef_temp[ind] <- .maInvert(coef_temp[ind])
               }
               if (any(coef_temp[mask] != res_temp$fit$par)) {
                 oldcode <- res_temp$fit$convergence
@@ -600,12 +469,12 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
           if (arma[2L] > 0L) {
             ind <- arma[1L] + 1L:arma[2L]
             if (all(mask[ind]))
-              coef[ind] <- maInvert(coef[ind])
+              coef[ind] <- .maInvert(coef[ind])
           }
           if (arma[4L] > 0L) {
             ind <- sum(arma[1L:3L]) + 1L:arma[4L]
             if (all(mask[ind]))
-              coef[ind] <- maInvert(coef[ind])
+              coef[ind] <- .maInvert(coef[ind])
           }
           if (any(coef[mask] != res$par)) {
             oldcode <- res$convergence
@@ -665,6 +534,13 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
   if (!no.optim) {
     dimnames(var) <- list(nm[mask], nm[mask])
   }
+
+  if (method == "CSS" || nrestart == 0) {
+    Errs <- NULL
+    Err_MSG <- NULL
+    inits <- NULL
+  }
+
   resid <- val[[2L]]
   stats::tsp(resid) <- xtsp
   class(resid) <- "ts"

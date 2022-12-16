@@ -42,8 +42,6 @@ auto.arima2 = function (y, nrestart = 10, d = NA, D = NA, max.p = 5, max.q = 5, 
   ndiffs <- utils::getFromNamespace("ndiffs", "forecast")
   nsdiffs <- utils::getFromNamespace("nsdiffs", "forecast")
   fitted.Arima <- utils::getFromNamespace("fitted.Arima", "forecast")
-  UndoWhichModels <- utils::getFromNamespace("UndoWhichModels", "forecast")
-  WhichModels <- utils::getFromNamespace("WhichModels", "forecast")
   if (stepwise && parallel) {
     warning("Parallel computer is only implemented when stepwise=FALSE, the model will be fit in serial.")
     parallel <- FALSE
@@ -738,16 +736,16 @@ myarima <- function(x, order = c(0, 0, 0), seasonal = c(0, 0, 0), constant=TRUE,
     xreg <- `colnames<-`(cbind(drift = 1:length(x), xreg),
                          make.unique(c("drift", if(is.null(colnames(xreg)) && !is.null(xreg)) rep("", NCOL(xreg)) else colnames(xreg))))
     if (use.season) {
-      suppressWarnings(fit <- try(arima2::arima2(x = x, order = order, seasonal = list(order = seasonal, period = m), xreg = xreg, method = method, nrestart=nrestart, ...), silent = TRUE))
+      suppressWarnings(fit <- try(arima2(x = x, order = order, seasonal = list(order = seasonal, period = m), xreg = xreg, method = method, nrestart=nrestart, ...), silent = TRUE))
     } else {
-      suppressWarnings(fit <- try(arima2::arima2(x = x, order = order, xreg = xreg, method = method, nrestart=nrestart, ...), silent = TRUE))
+      suppressWarnings(fit <- try(arima2(x = x, order = order, xreg = xreg, method = method, nrestart=nrestart, ...), silent = TRUE))
     }
   }
   else {
     if (use.season) {
-      suppressWarnings(fit <- try(arima2::arima2(x = x, order = order, seasonal = list(order = seasonal, period = m), include.mean = constant, method = method, xreg = xreg, nrestart=nrestart, ...), silent = TRUE))
+      suppressWarnings(fit <- try(arima2(x = x, order = order, seasonal = list(order = seasonal, period = m), include.mean = constant, method = method, xreg = xreg, nrestart=nrestart, ...), silent = TRUE))
     } else {
-      suppressWarnings(fit <- try(arima2::arima2(x = x, order = order, include.mean = constant, method = method, xreg = xreg, nrestart=nrestart, ...), silent = TRUE))
+      suppressWarnings(fit <- try(arima2(x = x, order = order, include.mean = constant, method = method, xreg = xreg, nrestart=nrestart, ...), silent = TRUE))
     }
   }
   if (is.null(xreg)) {
@@ -934,6 +932,7 @@ search.arima <- function(x, d=NA, D=NA, max.p=5, max.q=5,
                          max.P=2, max.Q=2, max.order=5, stationary=FALSE, ic=c("aic", "aicc", "bic"),
                          trace=FALSE, approximation=FALSE, xreg=NULL, offset=offset, allowdrift=TRUE,
                          allowmean=TRUE, parallel=FALSE, num.cores=2, ...) {
+  which_models <- utils::getFromNamespace("WhichModels", "forecast")
   # dataname <- substitute(x)
   ic <- match.arg(ic)
   m <- stats::frequency(x)
@@ -970,10 +969,11 @@ search.arima <- function(x, d=NA, D=NA, max.p=5, max.q=5,
       }
     }
   } else if (parallel == TRUE) {
-    to.check <- WhichModels(max.p, max.q, max.P, max.Q, maxK)
+    to.check <- which_models(max.p, max.q, max.P, max.Q, maxK)
 
     par.all.arima <- function(l, max.order) {
-      .tmp <- UndoWhichModels(l)
+      undo_which_models <- utils::getFromNamespace("UndoWhichModels", "forecast")
+      .tmp <- undo_which_models(l)
       i <- .tmp[1]
       j <- .tmp[2]
       I <- .tmp[3]

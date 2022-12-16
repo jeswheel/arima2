@@ -107,10 +107,14 @@ sample_ARMA_coef <- function(
 #' @param arma vector of integers c(ar, ma, ar_seas, ma_seas, period, i, i_seas)
 #' @param intercept If missing, the intercept is assumed fixed. Otherwise,
 #'    new intercept values are sampled near the value of `intercept`.
+#' @param trans boolean indicator of whether or not the parameters should be
+#'    transformed (see [stats::arima] `transform.pars` for more details.)
 #'
 #' @return a vector of randomly sampled ARMA coefficients.
 #' @noRd
-.sample_ARMA_coef <- function(arma, intercept) {
+.sample_ARMA_coef <- function(arma, intercept, trans = FALSE) {
+
+  C_ARIMA_Invtrans <- utils::getFromNamespace("C_ARIMA_Invtrans", "stats")
 
   # get number of coefficients
   ar <- arma[1L]
@@ -258,11 +262,25 @@ sample_ARMA_coef <- function(
     }
   }
 
-  if (!missing(intercept)) {
+  out <- if (!missing(intercept)) {
     c(ar_coef, ma_coef, ar_seas_coef, ma_seas_coef, stats::rnorm(1, intercept, 0.05))
   } else {
     c(ar_coef, ma_coef, ar_seas_coef, ma_seas_coef)
   }
+
+  if (trans) {
+    out <- .Call(C_ARIMA_Invtrans, out, arma)
+    if (arma[2L] > 0) {
+      ind <- arma[1L] + 1L:arma[2L]
+      out[ind] <- .maInvert(out[ind])
+    }
+    if (arma[4L] > 0) {
+      ind <- sum(arma[1L:3L]) + 1L:arma[4L]
+      out[ind] <- .maInvert(out[ind])
+    }
+  }
+
+  out
 }
 
 #' Roots 2 poly
@@ -377,3 +395,27 @@ sample_ARMA_coef <- function(
   all(Mod(polyroot(c(1, ma[1L:p]))) > 1)
 }
 
+#' MA Invert
+#'
+#' A function to invert the MA coefficients. This was copy and pasted from
+#' stats::arima
+#'
+#' @param ma vector of coefficients of an ARMA model.
+#' @return ma coefficients.
+#' @noRd
+.maInvert <- function(ma) {
+  q <- length(ma)
+  q0 <- max(which(c(1, ma) != 0)) - 1L
+  if (!q0)
+    return(ma)
+  roots <- polyroot(c(1, ma[1L:q0]))
+  ind <- Mod(roots) < 1
+  if (all(!ind))
+    return(ma)
+  if (q0 == 1)
+    return(c(1/ma[1L], rep.int(0, q - q0)))
+  roots[ind] <- 1/roots[ind]
+  x <- 1
+  for (r in roots) x <- c(x, 0) - c(0, x)/r
+  c(Re(x[-1L]), rep.int(0, q - q0))
+}

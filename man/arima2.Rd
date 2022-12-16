@@ -83,10 +83,12 @@ nrestart = 0L, then the function is equivalent to \code{\link[stats:arima]{stats
     regression coefficients.  Values already specified in \code{fixed}
     will be ignored.}
 
-\item{method}{fitting method: maximum likelihood or minimize
-    conditional sum-of-squares.  The default (unless there are missing
-    values) is to use conditional-sum-of-squares to find starting
-    values, then maximum likelihood.  Can be abbreviated.}
+\item{method}{fitting method: maximum likelihood or minimize conditional
+sum-of-squares. The default (unless there are missing values) is to use
+conditional-sum-of-squares to find starting values, then maximum
+likelihood. Note that the random restart algorithm is only implemented
+for method = "CSS-ML" or method = "ML", as method = "CSS" is not expected
+to maximize the model likelihood.}
 
 \item{n.cond}{only used if fitting by conditional-sum-of-squares: the
     number of initial observations to ignore.  It will be ignored if
