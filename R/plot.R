@@ -9,12 +9,12 @@
 #' @param ... Other parameters
 #'
 #' @return `Arima 2` plot. Type of plot is indicated through `roots` parameter.
-#' @export plot.arima2
+#' @export
 #'
 #' @examples
-#' mod <- plot.arima2(arima2(lh, order = c(1,0,1)))
-#' my.plot <- plot.arima2(x = arima2(lh, order = c(3,0,1)), roots = TRUE)
-plot.arima2 <- function(x, roots = FALSE, title = NULL, tick.lab = NULL, ...) {
+#' mod <- plot(arima2(lh, order = c(1,0,1)))
+#' my_plot <- plot(x = arima2(lh, order = c(3,0,1)), roots = TRUE)
+plot.Arima2 <- function(x, roots = FALSE, title = NULL, tick.lab = NULL, ...) {
 
   if(!is.null(title) & !is.character(title))stop("'title' should be character type.")
   if(!is.logical(roots))stop("'roots' should be logical type.")

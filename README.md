@@ -39,10 +39,7 @@ This is a basic example which shows you how to solve a common problem:
 ``` r
 library(arima2)
 
-# Set the seed for reproducible results. The seed was chosen so as to 
-# demonstrate a reproducible example of arima2 outperforming stats::arima
-# when the data are simulated from a known ARMA model. 
-set.seed(48312)  
+set.seed(41319)  
 
 # Get model coefficients from ARMA(2, 2)
 coefs <- sample_ARMA_coef(order = c(2, 2))
@@ -55,34 +52,68 @@ x <- intercept + arima.sim(
   n = 100, 
   model = list(ar = coefs[grepl("^ar[[:digit:]]+", names(coefs))], 
                ma = coefs[grepl("^ma[[:digit:]]+", names(coefs))])
-  )
-
-# Plot the data
-plot(x)
-```
-
-<img src="man/figures/README-example-1.png" width="100%" />
-
-``` r
+)
 
 # Fit ARMA model using arima2 and stats::arima 
-arma2 <- arima2(x, order = c(2, 0, 2))
+arma2 <- arima2(x, order = c(2, 0, 2), nrestart = 20)
 arma <- arima(x, order = c(2, 0, 2))
 ```
 
 In the example above, the resulting log-likelihood of the `stats::arima`
-function is -139.34, and the log-likelihood of the `arima2` function is
--135.04. For this particular model and dataset, the random restart
-algorithm implemented in `arima2` improved the model likelihood by 4.31
+function is -134.89, and the log-likelihood of the `arima2` function is
+-130.91. For this particular model and dataset, the random restart
+algorithm implemented in `arima2` improved the model likelihood by 3.97
 log-likelihood units.
 
-## TODO:
+Our package creates a new `S3` object that we call `Arima2`, which
+extends the `Arima` class of the `stats` package. Once the model has
+been fit, our package includes some features that help diagnose the
+fitted model using this new child class. For example, `ARMApolyroots`
+function will return the AR or MA polynomial roots of the fitted model:
 
-- [x] Implement `arima2`.
-- [ ] Create simulate function for `Arima2` S3 objects.
-- [ ] (Dhajanae) `ggplot2` figures for `Arima2` S3 objects.
-- [x] (Noel) Create function that makes AIC table.
-- [x] (Noel)`auto.arima2:` implements that `auto.arima` function using
-  `arima2`.
-- [x] (Jesse) `polyroots:` A function to get the roots of the
-  polynomials created by the `AR` and `MA` coefficients of a model.
+``` r
+ARMApolyroots(arma2, type = 'AR')
+#> [1] 0.6890317+0.7411727i 0.6890317-0.7411727i
+ARMApolyroots(arma2, type = 'MA')
+#> [1] 0.6506951+0.7593434i 0.6506951-0.7593434i
+```
+
+We have also implemented a `plot.Arima2` function that uses the
+`ggplot2` package so that we can visualize a fitted model. By default,
+the `plot` function for an `Arima2` object produces a *ggplot* object
+that displays the data used to fit the model:
+
+``` r
+plot(arma2)
+```
+
+<img src="man/figures/README-unnamed-chunk-3-1.png" width="100%" />
+
+One can also visualize the roots of the fitted model, by specifying the
+argument `roots = TRUE`:
+
+``` r
+plot(arma2, roots = TRUE)
+#> Registered S3 method overwritten by 'quantmod':
+#>   method            from
+#>   as.zoo.data.frame zoo
+#> Registered S3 method overwritten by 'forecast':
+#>   method        from  
+#>   summary.Arima arima2
+```
+
+<img src="man/figures/README-unnamed-chunk-4-1.png" width="100%" />
+
+Finally, if a user would like help in determining an appropriate number
+of coefficients, we provide the `aicTable` function. This function
+allows the user to select the model with the best AIC manually by
+outputting a table of AIC values:
+
+``` r
+aicTable(x, 3, 3, nrestart = 20)
+#>          MA0      MA1      MA2      MA3
+#> AR0 276.9178 274.8201 276.7071 278.7050
+#> AR1 274.7446 276.7243 275.8063 277.2970
+#> AR2 276.7177 275.2323 273.8285 275.1205
+#> AR3 278.5831 277.1474 275.2093 275.8209
+```

@@ -264,11 +264,11 @@ auto.arima2 = function (y, nrestart = 10, d = NA, D = NA, max.p = 5, max.q = 5, 
       }
     }
     if (D == 0) {
-      fit <- try(arima2::arima2(x, order = c(0, d, 0), xreg = xreg, nrestart=nrestart,
+      fit <- try(arima2(x, order = c(0, d, 0), xreg = xreg, nrestart=nrestart,
                               ...), silent = TRUE)
     }
     else {
-      fit <- try(arima2::arima2(x, order = c(0, d, 0), seasonal = list(order = c(0,
+      fit <- try(arima2(x, order = c(0, d, 0), seasonal = list(order = c(0,
                                                                                D, 0), period = m), xreg = xreg, nrestart=nrestart, ...), silent = TRUE)
     }
     if (!is.element("try-error", class(fit))) {
@@ -825,7 +825,7 @@ myarima <- function(x, order = c(0, 0, 0), seasonal = c(0, 0, 0), constant=TRUE,
       cat("\n", arima.string(fit, padding = TRUE), ":", fit$ic)
     }
 
-    return(structure(fit, class = c("forecast_ARIMA", "ARIMA", "Arima")))
+    return(structure(fit, class = c("Arima2", "forecast_ARIMA", "ARIMA", "Arima")))
   }
   else {
     # Catch errors due to unused arguments
@@ -1011,7 +1011,7 @@ search.arima <- function(x, d=NA, D=NA, max.p=5, max.q=5,
         constant <- unlist(all.models[[i]][1, 2])
       }
     }
-    class(bestfit) <- c("forecast_ARIMA", "ARIMA", "Arima")
+    class(bestfit) <- c("Arima2", "forecast_ARIMA", "ARIMA", "Arima")
   }
 
   if (exists("bestfit")) {

@@ -7,18 +7,19 @@
 #' of the table corresponds to a different MA value.
 #'
 #' @param data a time series object, or a dataset that can be used as input into
-#'    the [arima2::arima2] function.
+#'    the [arima2] function.
 #' @param P a positive integer value representing the maximum number of AR
 #'    coefficients that should be included in the table.
 #' @param Q a positive integer value representing the maximum number of MA
 #'    coefficients that should be included in the table.
 #' @param D a positive integer value representing the degree of differencing
 #'    to be used for each \eqn{ARMA(p, q)} model.
+#' @param nrestart number of restarts for the [arima2] function.
 #'
 #' @export
 #' @examples
 #' aicTable(presidents, 3, 2)
-aicTable <- function(data, P, Q, D = 0){
+aicTable <- function(data, P, Q, D = 0, nrestart = 10){
 
   if (!is.numeric(P) | !is.numeric(Q) | !is.numeric(D)) {
     stop("'P', 'Q' and 'D' must be numeric.")
@@ -31,7 +32,7 @@ aicTable <- function(data, P, Q, D = 0){
   table <- matrix(NA, (P + 1), (Q + 1))
   for(p in 0:P) {
     for(q in 0:Q) {
-      table[p + 1, q + 1] <- arima2(data, order = c(p, D, q))$aic
+      table[p + 1, q + 1] <- arima2(data, order = c(p, D, q), nrestart = nrestart)$aic
     }
   }
   dimnames(table) <- list(paste("AR", 0:P, sep = ""), paste("MA", 0:Q, sep = ""))
