@@ -78,9 +78,9 @@ function will return the AR or MA polynomial roots of the fitted model:
 
 ``` r
 ARMApolyroots(arma2, type = 'AR')
-#> [1] 0.689026+0.7411728i 0.689026-0.7411728i
+#> [1] 0.689026+0.7411727i 0.689026-0.7411727i
 ARMApolyroots(arma2, type = 'MA')
-#> [1] 0.6506962+0.7593438i 0.6506962-0.7593438i
+#> [1] 0.6506962+0.7593437i 0.6506962-0.7593437i
 ```
 
 We have also implemented a `plot.Arima2` function that uses the
