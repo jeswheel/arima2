@@ -54,15 +54,15 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
   # (arima2) Date: Dec 6, 2022
   # Revised:
 
-  C_TSconv <- utils::getFromNamespace("C_TSconv", "stats")
-  C_getQ0 <- utils::getFromNamespace("C_getQ0", "stats")
-  C_getQ0bis <- utils::getFromNamespace("C_getQ0bis", "stats")
-  C_ARIMA_Like <- utils::getFromNamespace("C_ARIMA_Like", "stats")
-  C_ARIMA_transPars <- utils::getFromNamespace("C_ARIMA_transPars", "stats")
-  C_ARIMA_CSS <- utils::getFromNamespace("C_ARIMA_CSS", "stats")
-  C_ARIMA_Invtrans <- utils::getFromNamespace("C_ARIMA_Invtrans", "stats")
-  C_ARIMA_Gradtrans <- utils::getFromNamespace("C_ARIMA_Gradtrans", "stats")
-  C_ARIMA_undoPars <- utils::getFromNamespace("C_ARIMA_undoPars", "stats")
+  # C_TSconv <- utils::getFromNamespace("C_TSconv", "stats")
+  # C_getQ0 <- utils::getFromNamespace("C_getQ0", "stats")
+  # C_getQ0bis <- utils::getFromNamespace("C_getQ0bis", "stats")
+  # C_ARIMA_Like <- utils::getFromNamespace("C_ARIMA_Like", "stats")
+  # C_ARIMA_transPars <- utils::getFromNamespace("C_ARIMA_transPars", "stats")
+  # C_ARIMA_CSS <- utils::getFromNamespace("C_ARIMA_CSS", "stats")
+  # C_ARIMA_Invtrans <- utils::getFromNamespace("C_ARIMA_Invtrans", "stats")
+  # C_ARIMA_Gradtrans <- utils::getFromNamespace("C_ARIMA_Gradtrans", "stats")
+  # C_ARIMA_undoPars <- utils::getFromNamespace("C_ARIMA_undoPars", "stats")
 
   "%+%" <- function(a, b) .Call(C_TSconv, a, b)
   SSinit <- match.arg(SSinit)
@@ -86,7 +86,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
     mod
   }
   arimaSS <- function(y, mod) {
-    .Call(C_ARIMA_Like, y, mod, 0L, TRUE)
+    .Call(C_ARIMA_Like, y, mod, 0L, TRUE, TRUE)
   }
   armafn <- function(p, trans) {
     par <- coef
@@ -97,7 +97,7 @@ arima2 <- function(x, order = c(0L, 0L, 0L),
       return(.Machine$double.xmax)
     if (ncxreg > 0)
       x <- x - xreg %*% par[narma + (1L:ncxreg)]
-    res <- .Call(C_ARIMA_Like, x, Z, 0L, FALSE)
+    res <- .Call(C_ARIMA_Like, x, Z, 0L, FALSE, TRUE)
     s2 <- res[1L]/res[3L]
     0.5 * (log(s2) + res[2L]/res[3L])
   }
