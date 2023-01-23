@@ -91,12 +91,6 @@ argument `roots = TRUE`:
 
 ``` r
 plot(arma2, roots = TRUE)
-#> Registered S3 method overwritten by 'quantmod':
-#>   method            from
-#>   as.zoo.data.frame zoo
-#> Registered S3 method overwritten by 'forecast':
-#>   method        from  
-#>   summary.Arima arima2
 ```
 
 <img src="man/figures/README-unnamed-chunk-3-1.png" width="100%" />
