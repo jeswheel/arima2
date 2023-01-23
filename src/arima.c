@@ -1,4 +1,12 @@
 /*
+ *
+ *  This function is based on the arima function of the stats package of R.
+ *  Below the copright statement of the arima function is reproduced.
+ *
+ *      File src/library/stats/src/arima.c
+ *      Part of the R stats package
+ *
+ *
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 2002-2016   The R Core Team.
  *
@@ -15,6 +23,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, a copy is available at
  *  https://www.R-project.org/Licenses/
+ *
+ *  Revised: Jan 23, 2023
  */
 
 #ifdef HAVE_CONFIG_H

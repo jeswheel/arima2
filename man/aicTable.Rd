@@ -4,11 +4,11 @@
 \alias{aicTable}
 \title{ARIMA AIC table}
 \usage{
-aicTable(data, P, Q, D = 0, nrestart = 10)
+aicTable(data, P, Q, D = 0, max_iters = 10)
 }
 \arguments{
 \item{data}{a time series object, or a dataset that can be used as input into
-the \link{arima2} function.}
+the \link{arima} function.}
 
 \item{P}{a positive integer value representing the maximum number of AR
 coefficients that should be included in the table.}
@@ -19,7 +19,7 @@ coefficients that should be included in the table.}
 \item{D}{a positive integer value representing the degree of differencing
 to be used for each \eqn{ARMA(p, q)} model.}
 
-\item{nrestart}{number of restarts for the \link{arima2} function.}
+\item{max_iters}{Maximum number of restarts for the \link{arima} function.}
 }
 \description{
 Construct table of AIC for all combinations 0<=p<=P and 0<=q<=Q

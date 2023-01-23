@@ -8,13 +8,14 @@
 #' @param roots Would you instead prefer to plot the roots on a unit circle? Insert logical type here.
 #' @param ... Other parameters
 #'
+#' @import ggplot2
 #' @return `Arima 2` plot. Type of plot is indicated through `roots` parameter.
 #' @export
 #'
 #' @examples
-#' mod <- plot(arima2(lh, order = c(1,0,1)))
-#' my_plot <- plot(x = arima2(lh, order = c(3,0,1)), roots = TRUE)
-plot.Arima2 <- function(x, roots = FALSE, title = NULL, tick.lab = NULL, ...) {
+#' mod <- plot(arima(lh, order = c(1,0,1)))
+#' my_plot <- plot(x = arima(lh, order = c(3,0,1)), roots = FALSE)
+plot.Arima2 <- function(x, roots = TRUE, title = NULL, tick.lab = NULL, ...) {
 
   if(!is.null(title) & !is.character(title))stop("'title' should be character type.")
   if(!is.logical(roots))stop("'roots' should be logical type.")
@@ -32,7 +33,7 @@ plot.Arima2 <- function(x, roots = FALSE, title = NULL, tick.lab = NULL, ...) {
 
       if(!is.null(title)){
         plot$labels$title = title
-        }
+      }
     }
 
 
@@ -77,12 +78,47 @@ plot.Arima2 <- function(x, roots = FALSE, title = NULL, tick.lab = NULL, ...) {
 
   ## displays all inverse roots within unit circle
   else{
+
+    ar_inv_roots <- 1 / ARMApolyroots(x)
+    ma_inv_roots <- 1 / ARMApolyroots(x, type = "MA")
+
+    ar_df <- data.frame(
+      root_type = "AR",
+      value = ar_inv_roots
+    )
+
+    ma_df <- data.frame(
+      root_type = "MA",
+      value = ma_inv_roots
+    )
+
+    all_roots <- rbind(ar_df, ma_df)
+    all_roots$Real <- Re(all_roots$value)
+    all_roots$Imaginary <- Im(all_roots$value)
+    all_roots$inside <- ifelse(Mod(all_roots$value) < 1, "inside", "outside")
+
     if(!is.null(title) | !is.null(tick.lab))warning("Parameters 'title' and 'tick.lab' will have no effect. See 'ggplot2' package documentation for more information.")
-    plot <- forecast::autoplot(x) +
-      ggplot2::labs(color = "Unit Circle") +
-      ggplot2::theme(axis.title = ggplot2::element_text(face="bold"))
+
+    plot <- ggplot(all_roots, aes(x = .data[["Real"]], y = .data[["Imaginary"]], col = .data[["inside"]])) +
+      annotate("path", x = cos(seq(0, 2*pi, length.out = 100)),
+               y = sin(seq(0, 2*pi, length.out = 100))) +
+      geom_hline(yintercept = 0) +
+      geom_vline(xintercept = 0) +
+      geom_point() +
+      facet_wrap(
+        ~root_type,
+        nrow = 1,
+        labeller = as_labeller(
+          c("AR" = "Inverse AR roots", "MA" = "Inverse MA roots"))
+      ) +
+      coord_fixed() +
+      labs(color = "Unit Circle") +
+      theme_bw() +
+      theme(axis.title = ggplot2::element_text(face="bold"),
+            legend.position = 'bottom')
+
     plot$layers[[4]]$aes_params$size = 1.5 ## making points smaller
-    }
+  }
 
 
   return(plot)

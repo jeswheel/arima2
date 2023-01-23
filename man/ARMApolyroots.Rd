@@ -8,7 +8,7 @@ ARMApolyroots(model, type = c("AR", "MA"))
 }
 \arguments{
 \item{model}{Either of fitted object of class \code{Arima} (i.e., the output of
-either \code{\link[stats:arima]{stats::arima()}} or \link{arima2}), a list with named elements at
+either \code{\link[stats:arima]{stats::arima()}} or \link{arima}), a list with named elements at
 least one of the named elements \code{ar} or \code{ma}, or a vector with named
 elements, such as \code{c("ar1" = 0.3, "ar2" = -0.2, "ma1" = 0.14)} Seasonal
 coefficients are ignored.}
@@ -26,6 +26,6 @@ correspond to an ARMA model.
 \examples{
 ARMApolyroots(sample_ARMA_coef((order = c(2, 1))), type = "AR")
 
-mod <- arima2(lh, order = c(3,0,0))
+mod <- arima(lh, order = c(3,0,0))
 ARMApolyroots(mod, type = "AR")
 }

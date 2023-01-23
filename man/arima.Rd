@@ -19,7 +19,8 @@ arima(
   optim.method = "BFGS",
   optim.control = list(),
   kappa = 1e+06,
-  diffuseControl = TRUE
+  diffuseControl = TRUE,
+  max_iters = 10
 )
 }
 \arguments{
@@ -105,6 +106,10 @@ arima(
 \item{diffuseControl}{Boolean indicator of whether or initial observations
 will have likelihood values ignored if controlled by the diffuse prior,
 i.e., have a Kalman gain of at least 1e4.}
+
+\item{max_iters}{Maximum number of random restarts for methods "CSS-ML" and
+"ML". If set to 1, the results of this algorithm is the same as
+\code{\link[stats:arima]{stats::arima()}} if argument diffuseControl is also set as TRUE.}
 }
 \value{
 A list of class \code{"Arima"} with components:

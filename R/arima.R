@@ -7,6 +7,9 @@
 #' @param diffuseControl Boolean indicator of whether or initial observations
 #'    will have likelihood values ignored if controlled by the diffuse prior,
 #'    i.e., have a Kalman gain of at least 1e4.
+#' @param max_iters Maximum number of random restarts for methods "CSS-ML" and
+#'    "ML". If set to 1, the results of this algorithm is the same as
+#'    [stats::arima()] if argument diffuseControl is also set as TRUE.
 #' @inheritParams stats::arima
 #' @inherit stats::arima return
 #'
@@ -20,15 +23,41 @@ arima <- function(x, order = c(0L, 0L, 0L),
                   SSinit = c("Gardner1980", "Rossignol2011"),
                   optim.method = "BFGS",
                   optim.control = list(), kappa = 1e6,
-                  diffuseControl = TRUE)
+                  diffuseControl = TRUE,
+                  max_iters = 10)
 {
+
+  #  This function is based on the arima function of the stats package
+  #  of R. Below the copright statement of the arima function is reproduced.
+  #
+  #       File src/library/stats/R/arima.R
+  #       Part of the stats package
+  #
+  #  Copyright (C) 2002-16 The R Core Team
+  #
+  #  This program is free software; you can redistribute it and/or modify
+  #  it under the terms of the GNU General Public License as published by
+  #  the Free Software Foundation; either version 2 of the License, or
+  #  (at your option) any later version.
+  #
+  #  This program is distributed in the hope that it will be useful,
+  #  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  #  GNU General Public License for more details.
+  #
+  #  A copy of the GNU General Public License is available at
+  #  http://www.r-project.org/Licenses/
+
+  #
+  # (arima2) Date: Dec 6, 2022
+  # Revised: Jan 23, 2023
+
   "%+%" <- function(a, b) .Call(C_TSconv, a, b)
 
   SSinit <- match.arg(SSinit)
   SS.G <- SSinit == "Gardner1980"
   ## helper of armafn(), called by optim()
-  upARIMA <- function(mod, phi, theta)
-  {
+  upARIMA <- function(mod, phi, theta) {
     p <- length(phi); q <- length(theta)
     mod$phi <- phi; mod$theta <- theta
     r <- max(p, q + 1L)
@@ -43,15 +72,13 @@ arima <- function(x, order = c(0L, 0L, 0L),
     mod
   }
 
-  arimaSS <- function(y, mod)
-  {
+  arimaSS <- function(y, mod) {
     ## next call changes mod components a, P, Pn so beware!
     .Call(C_ARIMA_Like, y, mod, 0L, TRUE, diffuseControl)
   }
 
   ## the objective function called by optim()
-  armafn <- function(p, trans)
-  {
+  armafn <- function(p, trans) {
     par <- coef
     par[mask] <- p
     trarma <- .Call(C_ARIMA_transPars, par, arma, trans)
@@ -65,8 +92,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
     0.5*(log(s2) + res[2L]/res[3L])
   }
 
-  armaCSS <- function(p)
-  {
+  armaCSS <- function(p) {
     par <- as.double(fixed)
     par[mask] <- p
     trarma <- .Call(C_ARIMA_transPars, par, arma, FALSE)
@@ -76,27 +102,10 @@ arima <- function(x, order = c(0L, 0L, 0L),
     0.5 * log(res)
   }
 
-  arCheck <- function(ar)
-  {
+  arCheck <- function(ar) {
     p <- max(which(c(1, -ar) != 0)) - 1
     if(!p) return(TRUE)
     all(Mod(polyroot(c(1, -ar[1L:p]))) > 1)
-  }
-
-  maInvert <- function(ma)
-  {
-    ## polyroot can't cope with leading zero.
-    q <- length(ma)
-    q0 <- max(which(c(1,ma) != 0)) - 1L
-    if(!q0) return(ma)
-    roots <- polyroot(c(1, ma[1L:q0]))
-    ind <- Mod(roots) < 1
-    if(all(!ind)) return(ma)
-    if(q0 == 1) return(c(1/ma[1L], rep.int(0, q - q0)))
-    roots[ind] <- 1/roots[ind]
-    x <- 1
-    for (r in roots) x <- c(x, 0) - c(0, x)/r
-    c(Re(x[-1L]), rep.int(0, q - q0))
   }
 
   series <- deparse1(substitute(x))
@@ -261,6 +270,8 @@ arima <- function(x, order = c(0L, 0L, 0L),
                  as.integer(ncond), TRUE)
     sigma2 <- val[[1L]]
     var <- if(no.optim) numeric() else solve(res$hessian * n.used)
+
+    value <- 2 * n.used * res$value + n.used + n.used * log(2 * pi)
   } else {
     if(method == "CSS-ML") {
       res <- if(no.optim)
@@ -281,68 +292,211 @@ arima <- function(x, order = c(0L, 0L, 0L),
 
     # Start of ML estimation
 
-    if(transform.pars) {
-      init <- .Call(C_ARIMA_Invtrans, init, arma)
-      ## enforce invertibility
-      if(arma[2L] > 0) {
-        ind <- arma[1L] + 1L:arma[2L]
-        init[ind] <- maInvert(init[ind])
-      }
-      if(arma[4L] > 0) {
-        ind <- sum(arma[1L:3L]) + 1L:arma[4L]
-        init[ind] <- maInvert(init[ind])
+    best_value <- Inf
+    best_coef <- coef
+    converged <- FALSE
+
+    for (i_start in 1:max_iters) {  # Do random restarts.
+
+      if (i_start == 1) {  # use CSS start as baseline, same result as stats::arima
+        if(transform.pars) {
+          new_init <- .Call(C_ARIMA_Invtrans, init, arma)
+          ## enforce invertibility
+          if(arma[2L] > 0) {
+            ind <- arma[1L] + 1L:arma[2L]
+            new_init[ind] <- .maInvert(new_init[ind])
+          }
+          if(arma[4L] > 0) {
+            ind <- sum(arma[1L:3L]) + 1L:arma[4L]
+            new_init[ind] <- .maInvert(new_init[ind])
+          }
+        }
+        trarma <- .Call(C_ARIMA_transPars, new_init, arma, transform.pars)
+        mod <- stats::makeARIMA(trarma[[1L]], trarma[[2L]], Delta, kappa, SSinit)
+        best_res <- if(no.optim)
+          list(convergence = 0, par = numeric(),
+               value = armafn(numeric(), as.logical(transform.pars)))
+        else
+          stats::optim(new_init[mask], armafn, method = optim.method,
+                       hessian = TRUE, control = optim.control,
+                       trans = as.logical(transform.pars))
+        if(best_res$convergence > 0)
+          warning(gettextf("possible convergence problem: optim gave code = %d",
+                           best_res$convergence), domain = NA)
+        best_coef[mask] <- best_res$par
+        if(transform.pars) {
+          ## enforce invertibility
+          if(arma[2L] > 0L) {
+            ind <- arma[1L] + 1L:arma[2L]
+            if(all(mask[ind]))
+              best_coef[ind] <- .maInvert(best_coef[ind])
+          }
+          if(arma[4L] > 0L) {
+            ind <- sum(arma[1L:3L]) + 1L:arma[4L]
+            if(all(mask[ind]))
+              best_coef[ind] <- .maInvert(best_coef[ind])
+          }
+          if(any(best_coef[mask] != best_res$par))  {  # need to re-fit
+            oldcode <- best_res$convergence
+            best_res <- stats::optim(best_coef[mask], armafn, method = optim.method,
+                                hessian = TRUE,
+                                control = list(maxit = 0L,
+                                               parscale = optim.control$parscale),
+                                trans = TRUE)
+            best_res$convergence <- oldcode
+            best_coef[mask] <- best_res$par
+          }
+          ## do it this way to ensure hessian was computed inside
+          ## stationarity region
+          A <- .Call(C_ARIMA_Gradtrans, as.double(best_coef), arma)
+          A <- A[mask, mask]
+          best_var <- crossprod(A, solve(best_res$hessian * n.used, A))
+          best_coef <- .Call(C_ARIMA_undoPars, best_coef, arma)
+        } else best_var <- if(no.optim) numeric() else solve(best_res$hessian * n.used)
+
+        best_trarma <- .Call(C_ARIMA_transPars, best_coef, arma, FALSE)
+        best_mod <- stats::makeARIMA(best_trarma[[1L]], best_trarma[[2L]], Delta, kappa, SSinit)
+        best_val <- if(ncxreg > 0L)
+          arimaSS(x - xreg %*% best_coef[narma + (1L:ncxreg)], best_mod)
+        else arimaSS(x, best_mod)
+
+        best_sigma2 <- best_val[[1L]][1L]/n.used
+        best_value <- 2 * n.used * best_res$value + n.used + n.used * log(2 * pi)
+      } else {  # New starting value
+
+        # Many things can go wrong when using a random starting point as
+        # initialization for ML estimation using stats::optim. Because the
+        # CSS-ML approach of stats::arima is considered a reasonable approach,
+        # we use that as a baseline and only get a different result if there is
+        # no issues when performing the random restart algorithm. We check
+        # ensure this using the try-catch statement below. We also suppres
+        # warnings because each random starting point may produce a convergence
+        # warning.
+
+        suppressWarnings(
+          restart_result <- tryCatch(
+            {
+              #### START
+
+              if (include.mean) {
+                new_init <- .sample_ARMA_coef(arma, init[length(init)])
+              } else {
+                new_init <- .sample_ARMA_coef(arma)
+              }
+
+              if(transform.pars) {
+                new_init <- .Call(C_ARIMA_Invtrans, new_init, arma)
+                ## enforce invertibility
+                if(arma[2L] > 0) {
+                  ind <- arma[1L] + 1L:arma[2L]
+                  new_init[ind] <- .maInvert(new_init[ind])
+                }
+                if(arma[4L] > 0) {
+                  ind <- sum(arma[1L:3L]) + 1L:arma[4L]
+                  new_init[ind] <- .maInvert(new_init[ind])
+                }
+              }
+              trarma <- .Call(C_ARIMA_transPars, new_init, arma, transform.pars)
+              mod <- stats::makeARIMA(trarma[[1L]], trarma[[2L]], Delta, kappa, SSinit)
+              res <- if(no.optim)
+                list(convergence = 0, par = numeric(),
+                     value = armafn(numeric(), as.logical(transform.pars)))
+              else
+                stats::optim(new_init[mask], armafn, method = optim.method,
+                             hessian = TRUE, control = optim.control,
+                             trans = as.logical(transform.pars))
+              if(res$convergence > 0)
+                warning(gettextf("possible convergence problem: optim gave code = %d",
+                                 res$convergence), domain = NA)
+              coef[mask] <- res$par
+              if(transform.pars) {
+                ## enforce invertibility
+                if(arma[2L] > 0L) {
+                  ind <- arma[1L] + 1L:arma[2L]
+                  if(all(mask[ind]))
+                    coef[ind] <- .maInvert(coef[ind])
+                }
+                if(arma[4L] > 0L) {
+                  ind <- sum(arma[1L:3L]) + 1L:arma[4L]
+                  if(all(mask[ind]))
+                    coef[ind] <- .maInvert(coef[ind])
+                }
+                if(any(coef[mask] != res$par))  {  # need to re-fit
+                  oldcode <- res$convergence
+                  res <- stats::optim(coef[mask], armafn, method = optim.method,
+                                      hessian = TRUE,
+                                      control = list(maxit = 0L,
+                                                     parscale = optim.control$parscale),
+                                      trans = TRUE)
+                  res$convergence <- oldcode
+                  coef[mask] <- res$par
+                }
+                ## do it this way to ensure hessian was computed inside
+                ## stationarity region
+                A <- .Call(C_ARIMA_Gradtrans, as.double(coef), arma)
+                A <- A[mask, mask]
+                var <- crossprod(A, solve(res$hessian * n.used, A))
+                coef <- .Call(C_ARIMA_undoPars, coef, arma)
+              } else var <- if(no.optim) numeric() else solve(res$hessian * n.used)
+              trarma <- .Call(C_ARIMA_transPars, coef, arma, FALSE)
+              mod <- stats::makeARIMA(trarma[[1L]], trarma[[2L]], Delta, kappa, SSinit)
+              val <- if(ncxreg > 0L)
+                arimaSS(x - xreg %*% coef[narma + (1L:ncxreg)], mod)
+              else arimaSS(x, mod)
+              sigma2 <- val[[1L]][1L]/n.used
+              value <- 2 * n.used * res$value + n.used + n.used * log(2 * pi)
+
+              list(
+                i_trarma = trarma,
+                i_mod = mod,
+                i_val = val,
+                i_sigma2 = sigma2,
+                i_value = value,
+                i_res = res,
+                i_coef = coef,
+                i_var = var,
+                error = 0
+              )
+              #### End
+            },
+            error = function(e) list(i_trarma = trarma, i_mod = mod, i_val = NULL,
+                                     i_sigma2 = NULL, i_value = Inf, i_res = NULL,
+                                     i_coef = NULL, i_var = NULL, error = 1)
+          )  # End trycatch
+        )
+
+        if (restart_result$error == 0 && restart_result$i_value < best_value) {
+          best_coef <- restart_result$i_coef
+          best_res <- restart_result$i_res
+          best_var <- restart_result$i_var
+          best_trarma <- restart_result$i_trarma
+          best_mod <- restart_result$i_mod
+          best_val <- restart_result$i_val
+          best_sigma2 <- restart_result$i_sigma2
+          best_value <- restart_result$i_value
+        }
+
+        # TODO: Check some stoppage criteria
+
+        if (converged) {
+          break
+        }
+
       }
     }
-    trarma <- .Call(C_ARIMA_transPars, init, arma, transform.pars)
-    mod <- stats::makeARIMA(trarma[[1L]], trarma[[2L]], Delta, kappa, SSinit)
-    res <- if(no.optim)
-      list(convergence = 0, par = numeric(),
-           value = armafn(numeric(), as.logical(transform.pars)))
-    else
-      stats::optim(init[mask], armafn, method = optim.method,
-            hessian = TRUE, control = optim.control,
-            trans = as.logical(transform.pars))
-    if(res$convergence > 0)
-      warning(gettextf("possible convergence problem: optim gave code = %d",
-                       res$convergence), domain = NA)
-    coef[mask] <- res$par
-    if(transform.pars) {
-      ## enforce invertibility
-      if(arma[2L] > 0L) {
-        ind <- arma[1L] + 1L:arma[2L]
-        if(all(mask[ind]))
-          coef[ind] <- maInvert(coef[ind])
-      }
-      if(arma[4L] > 0L) {
-        ind <- sum(arma[1L:3L]) + 1L:arma[4L]
-        if(all(mask[ind]))
-          coef[ind] <- maInvert(coef[ind])
-      }
-      if(any(coef[mask] != res$par))  {  # need to re-fit
-        oldcode <- res$convergence
-        res <- stats::optim(coef[mask], armafn, method = optim.method,
-                     hessian = TRUE,
-                     control = list(maxit = 0L,
-                                    parscale = optim.control$parscale),
-                     trans = TRUE)
-        res$convergence <- oldcode
-        coef[mask] <- res$par
-      }
-      ## do it this way to ensure hessian was computed inside
-      ## stationarity region
-      A <- .Call(C_ARIMA_Gradtrans, as.double(coef), arma)
-      A <- A[mask, mask]
-      var <- crossprod(A, solve(res$hessian * n.used, A))
-      coef <- .Call(C_ARIMA_undoPars, coef, arma)
-    } else var <- if(no.optim) numeric() else solve(res$hessian * n.used)
-    trarma <- .Call(C_ARIMA_transPars, coef, arma, FALSE)
-    mod <- stats::makeARIMA(trarma[[1L]], trarma[[2L]], Delta, kappa, SSinit)
-    val <- if(ncxreg > 0L)
-      arimaSS(x - xreg %*% coef[narma + (1L:ncxreg)], mod)
-    else arimaSS(x, mod)
-    sigma2 <- val[[1L]][1L]/n.used
-  }
-  value <- 2 * n.used * res$value + n.used + n.used * log(2 * pi)
+
+    coef <- best_coef
+    res <- best_res
+    var <- best_var
+    trarma <- best_trarma
+    mod <- best_mod
+    val <- best_val
+    sigma2 <- best_sigma2
+    value <- best_value
+
+  }  # End of ML Estimation
+
+  # value <- 2 * n.used * res$value + n.used + n.used * log(2 * pi)
   aic <- if(method != "CSS") value + 2*sum(mask) + 2 else NA
   nm <- NULL
   if (arma[1L] > 0L) nm <- c(nm, paste0("ar", 1L:arma[1L]))
@@ -369,6 +523,6 @@ arima <- function(x, order = c(0L, 0L, 0L),
                  loglik = -0.5 * value, aic = aic, arma = arma,
                  residuals = resid, call = match.call(), series = series,
                  code = res$convergence, n.cond = ncond, nobs = n.used,
-                 model = mod),
-            class = "Arima")
+                 model = mod, x = x),
+            class = c("Arima2", "Arima"))
 }

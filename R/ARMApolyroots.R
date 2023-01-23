@@ -4,7 +4,7 @@
 #' correspond to an ARMA model.
 #'
 #' @param model Either of fitted object of class `Arima` (i.e., the output of
-#'     either [stats::arima()] or [arima2]), a list with named elements at
+#'     either [stats::arima()] or [arima]), a list with named elements at
 #'     least one of the named elements `ar` or `ma`, or a vector with named
 #'     elements, such as `c("ar1" = 0.3, "ar2" = -0.2, "ma1" = 0.14)` Seasonal
 #'     coefficients are ignored.
@@ -17,7 +17,7 @@
 #' @examples
 #' ARMApolyroots(sample_ARMA_coef((order = c(2, 1))), type = "AR")
 #'
-#' mod <- arima2(lh, order = c(3,0,0))
+#' mod <- arima(lh, order = c(3,0,0))
 #' ARMApolyroots(mod, type = "AR")
 ARMApolyroots <- function(model, type = c("AR", "MA")) {
   type <- match.arg(type)

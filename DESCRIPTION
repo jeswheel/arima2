@@ -1,6 +1,6 @@
 Package: arima2
-Title: What the Package Does (One Line, Title Case)
-Version: 1.1.3
+Title: Maximum Likelihood Estimation for ARIMA models 
+Version: 2.0.0
 Authors@R: 
     c(
     person("Noel", "McAllister", email = "noelmcp@umich.edu", role = "aut"),
@@ -22,6 +22,5 @@ Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Imports: 
-    forecast,
     ggplot2,
     methods

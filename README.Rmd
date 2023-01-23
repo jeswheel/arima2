@@ -19,13 +19,13 @@ knitr::opts_chunk$set(
 <!-- badges: end -->
 
 The goal of `arima2` is to provide a set of tools to aid in the analysis of time series data in `R`. 
-One such function is `arima2::arima2`, which provides an interface to estimating Auto Regressive Integrated Moving Average (ARIMA) models using a random-restart algorithm. 
+One such function is `arima2::arima`, which provides an interface to estimating Auto Regressive Integrated Moving Average (ARIMA) models using a random-restart algorithm. 
 This function improves on the functionality of the `stats::arima` method, as it has the potential to increase the likelihood of the final output model.
 By design, the function cannot result in models with lower likelihoods than that of the `stats::arima` function. 
 The potential for increased model likelihoods is obtained at the cost of computational efficiency. 
 The function is order $O(n)$ times slower than the `stats::arima` function, where $n$ is the number of random restarts.
 Because the estimation of ARIMA models takes only a fraction of a second, we are of the opinion that potential to increase model likelihoods is well worth this computational cost.
-The `arima2` function is implemented by modifying the source code of the `stats::arima` function. 
+The `arima` function is implemented by modifying the source code of the `stats::arima` function. 
 
 ## Installation
 
@@ -59,11 +59,11 @@ x <- intercept + arima.sim(
 )
 
 # Fit ARMA model using arima2 and stats::arima 
-arma2 <- arima2(x, order = c(2, 0, 2), nrestart = 20)
-arma <- arima(x, order = c(2, 0, 2))
+arma2 <- arima(x, order = c(2, 0, 2), max_iters = 20)
+arma <- stats::arima(x, order = c(2, 0, 2))
 ```
 
-In the example above, the resulting log-likelihood of the `stats::arima` function is `r round(arma$loglik, 2)`, and the log-likelihood of the `arima2` function is `r round(arma2$loglik, 2)`.
+In the example above, the resulting log-likelihood of the `stats::arima` function is `r round(arma$loglik, 2)`, and the log-likelihood of the `arima` function is `r round(arma2$loglik, 2)`.
 For this particular model and dataset, the random restart algorithm implemented in `arima2` improved the model likelihood by `r round(arma2$loglik - arma$loglik, 2)` log-likelihood units. 
 
 Our package creates a new `S3` object that we call `Arima2`, which extends the `Arima` class of the `stats` package. 
@@ -76,22 +76,11 @@ ARMApolyroots(arma2, type = 'MA')
 ```
 
 We have also implemented a `plot.Arima2` function that uses the `ggplot2` package so that we can visualize a fitted model. 
-By default, the `plot` function for an `Arima2` object produces a *ggplot* object that displays the data used to fit the model:
 
-```{r}
-plot(arma2)
-```
-
-One can also visualize the roots of the fitted model, by specifying the argument `roots = TRUE`:
+One can visualize the roots of the fitted model, by specifying the argument `roots = TRUE`:
 
 ```{r}
 plot(arma2, roots = TRUE)
 ```
 
 Finally, if a user would like help in determining an appropriate number of coefficients, we provide the `aicTable` function.
-This function allows the user to select the model with the best AIC manually by outputting a table of AIC values: 
-
-```{r}
-aicTable(x, 3, 3, nrestart = 20)
-```
-
