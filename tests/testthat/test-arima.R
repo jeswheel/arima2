@@ -63,3 +63,12 @@ test_that("arima: max_iters = 0 works", {
   expect_equal(arma$loglik, arma2$loglik)
   expect_equal(arma$residuals, arma2$residuals)
 })
+
+test_that("No transformation works", {
+  set.seed(5)
+  x <- arima.sim(model = list(ar = c(0.3, -0.2), ma = c(0.1)), n = 100)
+  arma <- stats::arima(x, order = c(2, 0, 1), transform.pars = FALSE)
+  arma2 <- arima(x, order = c(2, 0, 1), transform.pars = FALSE, SSinit = "Gardner1980")
+
+  expect_gte(arma2$loglik, arma$loglik)
+})

@@ -325,6 +325,8 @@ arima <- function(x, order = c(0L, 0L, 0L),
             ind <- sum(arma[1L:3L]) + 1L:arma[4L]
             new_init[ind] <- .maInvert(new_init[ind])
           }
+        } else {
+          new_init <- init
         }
         trarma <- .Call(C_ARIMA_transPars, new_init, arma, transform.pars)
         mod <- stats::makeARIMA(trarma[[1L]], trarma[[2L]], Delta, kappa, SSinit)
