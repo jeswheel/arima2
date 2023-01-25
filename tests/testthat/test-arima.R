@@ -9,9 +9,9 @@ test_that("arima: ML works", {
   arma2_2 <- arima(x2, order = c(2, 0, 1), method = "ML")
   arma2_3 <- arima(x3, order = c(3, 0, 2), method = "ML")
 
-  arma_1 <- stats::arima(x1, order = c(1, 0, 0), method = "ML")
-  arma_2 <- stats::arima(x2, order = c(2, 0, 1), method = "ML")
-  arma_3 <- stats::arima(x3, order = c(3, 0, 2), method = "ML")
+  arma_1 <- stats::arima(x1, order = c(1, 0, 0), method = "ML", SSinit = "Rossignol2011")
+  arma_2 <- stats::arima(x2, order = c(2, 0, 1), method = "ML", SSinit = "Rossignol2011")
+  arma_3 <- stats::arima(x3, order = c(3, 0, 2), method = "ML", SSinit = "Rossignol2011")
 
   expect_gte(arma2_1$loglik, arma_1$loglik)
   expect_gte(arma2_2$loglik, arma_2$loglik)
@@ -29,9 +29,9 @@ test_that("arima: CSS-ML works", {
   arma2_2 <- arima(x2, order = c(2, 0, 1))
   arma2_3 <- arima(x3, order = c(3, 0, 2))
 
-  arma_1 <- stats::arima(x1, order = c(1, 0, 0))
-  arma_2 <- stats::arima(x2, order = c(2, 0, 1))
-  arma_3 <- stats::arima(x3, order = c(3, 0, 2))
+  arma_1 <- stats::arima(x1, order = c(1, 0, 0), SSinit = "Rossignol2011")
+  arma_2 <- stats::arima(x2, order = c(2, 0, 1), SSinit = "Rossignol2011")
+  arma_3 <- stats::arima(x3, order = c(3, 0, 2), SSinit = "Rossignol2011")
 
   expect_gte(arma2_1$loglik, arma_1$loglik)
   expect_gte(arma2_2$loglik, arma_2$loglik)
@@ -43,7 +43,7 @@ test_that("arima: CSS works", {
 
   x <- arima.sim(model = list(ar = c(0.3, -0.2), ma = c(0.1)), n = 100)
   arma <- stats::arima(x, order = c(2, 0, 1), method = "CSS")
-  arma2 <- arima(x, order = c(2, 0, 1), method = "CSS")
+  arma2 <- arima(x, order = c(2, 0, 1), method = "CSS", SSinit = "Gardner1980")
 
   expect_equal(arma$coef, arma2$coef)
   expect_equal(arma$var.coef, arma2$var.coef)
