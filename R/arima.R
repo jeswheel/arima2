@@ -395,9 +395,16 @@ arima <- function(x, order = c(0L, 0L, 0L),
               #### START
 
               if (include.mean) {
-                new_init <- .sample_ARMA_coef(arma, init[length(init)])
+                new_init <- .sample_ARMA_coef(
+                  arma = arma,
+                  intercept = init[length(init)],
+                  Mod_bounds = c(0.05, 0.95)
+                )
               } else {
-                new_init <- .sample_ARMA_coef(arma)
+                new_init <- .sample_ARMA_coef(
+                  arma = arma,
+                  Mod_bounds = c(0.05, 0.95)
+                )
               }
 
               if(transform.pars) {
