@@ -9,7 +9,16 @@
 #'    i.e., have a Kalman gain of at least 1e4.
 #' @param max_iters Maximum number of random restarts for methods "CSS-ML" and
 #'    "ML". If set to 1, the results of this algorithm is the same as
-#'    [stats::arima()] if argument diffuseControl is also set as TRUE.
+#'    [stats::arima()] if argument \code{diffuseControl} is also set as TRUE.
+#'    \code{max_iters} is often not reached because the condition
+#'    \code{max_repeats} is typically achieved first.
+#' @param max_repeats Integer. If the last \code{max_repeats} random starts did
+#'    not result in improved likelihoods, then stop the search. Each result of
+#'    the optim function is only considered to improve the likelihood if it does
+#'    so by more than \code{eps_tol}.
+#' @param eps_tol Tolerance for accepting a new solution to be better than a
+#'    previous solution. The default corresponds to a one ten-thousandth
+#'    unit increase in log-likelihood.
 #' @inheritParams stats::arima
 #' @inherit stats::arima return
 #'
@@ -20,11 +29,13 @@ arima <- function(x, order = c(0L, 0L, 0L),
                   xreg = NULL, include.mean = TRUE,
                   transform.pars = TRUE, fixed = NULL, init = NULL,
                   method = c("CSS-ML", "ML", "CSS"), n.cond,
-                  SSinit = c("Gardner1980", "Rossignol2011"),
+                  SSinit = c("Rossignol2011", "Gardner1980"),
                   optim.method = "BFGS",
                   optim.control = list(), kappa = 1e6,
                   diffuseControl = TRUE,
-                  max_iters = 10)
+                  max_iters = 100,
+                  max_repeats = 10,
+                  eps_tol = 2e-4)
 {
 
   #  This function is based on the arima function of the stats package
@@ -252,6 +263,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
     optim.control$parscale <- parscale[mask]
 
   if(method == "CSS") {
+    i_start = NULL
     res <- if(no.optim)
       list(convergence=0L, par=numeric(), value=armaCSS(numeric()))
     else
@@ -272,6 +284,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
     var <- if(no.optim) numeric() else solve(res$hessian * n.used)
 
     value <- 2 * n.used * res$value + n.used + n.used * log(2 * pi)
+    all_values <- value
   } else {
     if(method == "CSS-ML") {
       res <- if(no.optim)
@@ -295,6 +308,8 @@ arima <- function(x, order = c(0L, 0L, 0L),
     best_value <- Inf
     best_coef <- coef
     converged <- FALSE
+    all_values <- c()
+    num_repeat <- 1
 
     for (i_start in 1:max_iters) {  # Do random restarts.
 
@@ -310,6 +325,8 @@ arima <- function(x, order = c(0L, 0L, 0L),
             ind <- sum(arma[1L:3L]) + 1L:arma[4L]
             new_init[ind] <- .maInvert(new_init[ind])
           }
+        } else {
+          new_init <- init
         }
         trarma <- .Call(C_ARIMA_transPars, new_init, arma, transform.pars)
         mod <- stats::makeARIMA(trarma[[1L]], trarma[[2L]], Delta, kappa, SSinit)
@@ -362,6 +379,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
 
         best_sigma2 <- best_val[[1L]][1L]/n.used
         best_value <- 2 * n.used * best_res$value + n.used + n.used * log(2 * pi)
+        all_values <- c(all_values, best_value)
       } else {  # New starting value
 
         # Many things can go wrong when using a random starting point as
@@ -379,9 +397,16 @@ arima <- function(x, order = c(0L, 0L, 0L),
               #### START
 
               if (include.mean) {
-                new_init <- .sample_ARMA_coef(arma, init[length(init)])
+                new_init <- .sample_ARMA_coef(
+                  arma = arma,
+                  intercept = init[length(init)],
+                  Mod_bounds = c(0.05, 0.95)
+                )
               } else {
-                new_init <- .sample_ARMA_coef(arma)
+                new_init <- .sample_ARMA_coef(
+                  arma = arma,
+                  Mod_bounds = c(0.05, 0.95)
+                )
               }
 
               if(transform.pars) {
@@ -465,7 +490,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
           )  # End trycatch
         )
 
-        if (restart_result$error == 0 && restart_result$i_value < best_value) {
+        if (restart_result$error == 0 && restart_result$i_value + eps_tol < best_value) {
           best_coef <- restart_result$i_coef
           best_res <- restart_result$i_res
           best_var <- restart_result$i_var
@@ -474,9 +499,15 @@ arima <- function(x, order = c(0L, 0L, 0L),
           best_val <- restart_result$i_val
           best_sigma2 <- restart_result$i_sigma2
           best_value <- restart_result$i_value
+          num_repeat <- 1
+        } else {
+          num_repeat <- num_repeat + 1
         }
 
-        # TODO: Check some stoppage criteria
+        all_values <- c(all_values, best_value)
+
+        converged <- num_repeat >= max_repeats
+        # converged <- pnorm(2 * 0.3 * sqrt(i_start)) - pnorm(-2 * 0.3 * sqrt(i_start)) - (1 - get_rho_hat(all_values, eps_tol)/i_start)^(i_start + num_repeat) >= 0.99
 
         if (converged) {
           break
@@ -523,6 +554,59 @@ arima <- function(x, order = c(0L, 0L, 0L),
                  loglik = -0.5 * value, aic = aic, arma = arma,
                  residuals = resid, call = match.call(), series = series,
                  code = res$convergence, n.cond = ncond, nobs = n.used,
-                 model = mod, x = x),
+                 model = mod, x = x, num_starts = i_start,
+                 all_values = -0.5 * all_values),
             class = c("Arima2", "Arima"))
 }
+
+
+# get_taus <- function(values) {
+#   taus <- numeric(length(values))
+#   which_tau <- 1
+#   val <- Inf
+#
+#   for (i in (length(values)):1) {
+#     if (values[i] != val) {
+#       val <- values[i]
+#       taus[which_tau] <- i
+#       which_tau <- which_tau + 1
+#     }
+#   }
+#
+#   taus
+# }
+#
+# get_rho <- function(values, taus, epsilon) {
+#   min_val <- values[length(values)]
+#   for (i in 2:length(taus)) {
+#     if (taus[i] == 0) {
+#       break
+#     }
+#     if (values[taus[i]] <= min_val + epsilon) {
+#       next
+#     } else {
+#       break
+#     }
+#   }
+#   i - 1
+# }
+#
+# get_gamma <- function(values, taus, epsilon) {
+#   n <- length(values)
+#   start <- taus[2] + 1
+#
+#   if (start >= n) {
+#     return(0)
+#   } else {
+#     ret_val <- 0
+#     for (i in start:(n - 1)) {
+#       if (values[i] <= values[n] + epsilon) ret_val <- ret_val + 1
+#     }
+#   }
+#   ret_val
+# }
+#
+# get_rho_hat <- function(values, epsilon) {
+#   taus <- get_taus(values)
+#   get_rho(values, taus, epsilon) + get_gamma(values, taus, epsilon)
+# }

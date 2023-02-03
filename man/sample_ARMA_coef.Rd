@@ -7,7 +7,8 @@
 sample_ARMA_coef(
   order = c(0L, 0L),
   seasonal = list(order = c(0L, 0L), period = NA),
-  n = 1
+  n = 1,
+  Mod_bounds = c(0.05, 0.95)
 )
 }
 \arguments{
@@ -23,6 +24,8 @@ output.}
 
 \item{n}{An integer indicating how many sets of ARMA coefficients should be
 sampled.}
+
+\item{Mod_bounds}{Bounds on the magnitude of the roots.}
 }
 \value{
 a vector of randomly sampled ARMA coefficients.

@@ -15,12 +15,14 @@ arima(
   init = NULL,
   method = c("CSS-ML", "ML", "CSS"),
   n.cond,
-  SSinit = c("Gardner1980", "Rossignol2011"),
+  SSinit = c("Rossignol2011", "Gardner1980"),
   optim.method = "BFGS",
   optim.control = list(),
   kappa = 1e+06,
   diffuseControl = TRUE,
-  max_iters = 10
+  max_iters = 100,
+  max_repeats = 10,
+  eps_tol = 2e-04
 )
 }
 \arguments{
@@ -109,7 +111,18 @@ i.e., have a Kalman gain of at least 1e4.}
 
 \item{max_iters}{Maximum number of random restarts for methods "CSS-ML" and
 "ML". If set to 1, the results of this algorithm is the same as
-\code{\link[stats:arima]{stats::arima()}} if argument diffuseControl is also set as TRUE.}
+\code{\link[stats:arima]{stats::arima()}} if argument \code{diffuseControl} is also set as TRUE.
+\code{max_iters} is often not reached because the condition
+\code{max_repeats} is typically achieved first.}
+
+\item{max_repeats}{Integer. If the last \code{max_repeats} random starts did
+not result in improved likelihoods, then stop the search. Each result of
+the optim function is only considered to improve the likelihood if it does
+so by more than \code{eps_tol}.}
+
+\item{eps_tol}{Tolerance for accepting a new solution to be better than a
+previous solution. The default corresponds to a one ten-thousandth
+unit increase in log-likelihood.}
 }
 \value{
 A list of class \code{"Arima"} with components:
