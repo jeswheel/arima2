@@ -4,7 +4,7 @@
 \alias{aicTable}
 \title{ARIMA AIC table}
 \usage{
-aicTable(data, P, Q, D = 0, max_iters = 10)
+aicTable(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_tol = 2e-04)
 }
 \arguments{
 \item{data}{a time series object, or a dataset that can be used as input into
@@ -16,10 +16,25 @@ coefficients that should be included in the table.}
 \item{Q}{a positive integer value representing the maximum number of MA
 coefficients that should be included in the table.}
 
-\item{D}{a positive integer value representing the degree of differencing
-to be used for each \eqn{ARMA(p, q)} model.}
+\item{D}{a positive integer value representing the degree of differencing}
 
-\item{max_iters}{Maximum number of restarts for the \link{arima} function.}
+\item{max_repeats}{Integer. If the last \code{max_repeats} random starts did
+not result in improved likelihoods, then stop the search. Each result of
+the optim function is only considered to improve the likelihood if it does
+so by more than \code{eps_tol}.}
+
+\item{max_iters}{Maximum number of random restarts for methods "CSS-ML" and
+"ML". If set to 1, the results of this algorithm is the same as
+\code{\link[stats:arima]{stats::arima()}} if argument \code{diffuseControl} is also set as TRUE.
+\code{max_iters} is often not reached because the condition
+\code{max_repeats} is typically achieved first.}
+
+\item{eps_tol}{Tolerance for accepting a new solution to be better than a
+previous solution. The default corresponds to a one ten-thousandth
+unit increase in log-likelihood.}
+}
+\value{
+A matrix containing the model AIC values.
 }
 \description{
 Construct table of AIC for all combinations 0<=p<=P and 0<=q<=Q
