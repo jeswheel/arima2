@@ -17,8 +17,8 @@
 #'    the optim function is only considered to improve the likelihood if it does
 #'    so by more than \code{eps_tol}.
 #' @param eps_tol Tolerance for accepting a new solution to be better than a
-#'    previous solution. The default corresponds to a one ten-thousandth
-#'    unit increase in log-likelihood.
+#'    previous solution in terms of log-likelihood. The default corresponds to a
+#'    one ten-thousandth unit increase in log-likelihood.
 #' @inheritParams stats::arima
 #' @inherit stats::arima return
 #'
@@ -35,7 +35,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
                   diffuseControl = TRUE,
                   max_iters = 100,
                   max_repeats = 10,
-                  eps_tol = 2e-4)
+                  eps_tol = 1e-4)
 {
 
   #  This function is based on the arima function of the stats package
@@ -490,7 +490,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
           )  # End trycatch
         )
 
-        if (restart_result$error == 0 && restart_result$i_value + eps_tol < best_value) {
+        if (restart_result$error == 0 && restart_result$i_value + (eps_tol * 2) < best_value) {
           best_coef <- restart_result$i_coef
           best_res <- restart_result$i_res
           best_var <- restart_result$i_var

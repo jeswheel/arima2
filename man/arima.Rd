@@ -22,7 +22,7 @@ arima(
   diffuseControl = TRUE,
   max_iters = 100,
   max_repeats = 10,
-  eps_tol = 2e-04
+  eps_tol = 1e-04
 )
 }
 \arguments{
@@ -121,8 +121,8 @@ the optim function is only considered to improve the likelihood if it does
 so by more than \code{eps_tol}.}
 
 \item{eps_tol}{Tolerance for accepting a new solution to be better than a
-previous solution. The default corresponds to a one ten-thousandth
-unit increase in log-likelihood.}
+previous solution in terms of log-likelihood. The default corresponds to a
+one ten-thousandth unit increase in log-likelihood.}
 }
 \value{
 A list of class \code{"Arima"} with components:

@@ -30,7 +30,7 @@
 #' @export
 #' @examples
 #' aicTable(presidents, 3, 2)
-aicTable <- function(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_tol = 2e-4){
+aicTable <- function(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_tol = 1e-4){
 
   if (!is.numeric(P) | !is.numeric(Q) | !is.numeric(D)) {
     stop("'P', 'Q' and 'D' must be numeric.")
@@ -83,7 +83,7 @@ aicTable <- function(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_t
 #' @noRd
 #'
 #' @examples .checkTable(presidents, 3, 2)
-.checkTable <- function(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_tol = 2e-4,
+.checkTable <- function(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_tol = 1e-4,
                         method = 'arima2') {
 
   is_consistent = TRUE
@@ -106,10 +106,10 @@ aicTable <- function(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_t
         table[p + 1, q + 1] <- stats::arima(data, order = c(p, D, q))$loglik
       }
 
-      if (q > 0 && table[p + 1, q + 1] < table[p + 1, q]) {
+      if (q > 0 && table[p + 1, q + 1] + eps_tol < table[p + 1, q]) {
         is_consistent = FALSE
         break
-      } else if (p > 0 && table[p + 1, q + 1] < table[p, q + 1]) {
+      } else if (p > 0 && table[p + 1, q + 1] + eps_tol < table[p, q + 1]) {
         is_consistent = FALSE
         break
       }

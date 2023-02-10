@@ -4,7 +4,7 @@
 \alias{aicTable}
 \title{ARIMA AIC table}
 \usage{
-aicTable(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_tol = 2e-04)
+aicTable(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_tol = 1e-04)
 }
 \arguments{
 \item{data}{a time series object, or a dataset that can be used as input into
