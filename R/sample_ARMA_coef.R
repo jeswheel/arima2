@@ -289,9 +289,19 @@ sample_ARMA_coef <- function(
 
   names(out) <- par_names
 
-  inv_ar_roots <- 1 / ARMApolyroots(out)
-  inv_ma_roots <- 1 / ARMApolyroots(out, type = "MA")
-  min_inv_root_dist <- min(Mod(outer(inv_ar_roots, inv_ma_roots, FUN = '-')))
+  if (arma[1L] != 0) {
+    inv_ar_roots <- 1 / ARMApolyroots(out)
+  }
+
+  if (arma[2L] != 0) {
+    inv_ma_roots <- 1 / ARMApolyroots(out, type = "MA")
+  }
+
+  if (arma[1L] !=0 && arma[2L] != 0) {
+    min_inv_root_dist <- min(Mod(outer(inv_ar_roots, inv_ma_roots, FUN = '-')))
+  } else {
+    min_inv_root_dist <- 1
+  }
 
   if (min_inv_root_dist < 0.05) {
     return(.sample_ARMA_coef(
