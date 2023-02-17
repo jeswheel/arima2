@@ -1,6 +1,11 @@
 #' Plot `Arima2` object
 #'
-#' This function plots time series data loaded from an `Arima2` object or plots inverse roots of the AR or MA polynomials in a fitted ARIMA model on the complex unit circle. Note: Layers may be added to `Arima2` plots using `ggplot2`'s plus operator.
+#' This function plots time series data loaded from an `Arima2` object or plots
+#' inverse roots of the AR or MA polynomials in a fitted ARIMA model on the
+#' complex unit circle.
+#'
+#' The output of this function is a `ggplot` object, so layers may be added to
+#' the output of this function using `ggplot2`'s plus operator.
 #'
 #' @param x An `Arima2` object. This parameter is an object created using the function `arima2()`.
 #' @param title Title of plot
@@ -13,8 +18,8 @@
 #' @export
 #'
 #' @examples
-#' mod <- plot(arima(lh, order = c(1,0,1)))
-#' my_plot <- plot(x = arima(lh, order = c(3,0,1)), roots = FALSE)
+#' plot(arima(lh, order = c(1,0,1)))
+#' plot(x = arima(lh, order = c(3,0,1)), roots = FALSE)
 plot.Arima2 <- function(x, roots = TRUE, title = NULL, tick.lab = NULL, ...) {
 
   if(!is.null(title) & !is.character(title))stop("'title' should be character type.")

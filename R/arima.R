@@ -397,16 +397,18 @@ arima <- function(x, order = c(0L, 0L, 0L),
               #### START
 
               if (include.mean) {
-                new_init <- .sample_ARMA_coef(
+                new_init <- init
+                new_init[mask] <- .sample_ARMA_coef(
                   arma = arma,
                   intercept = init[length(init)],
-                  Mod_bounds = c(0.05, 0.95)
+                  Mod_bounds = c(0.05, 0.95)[mask]
                 )
               } else {
-                new_init <- .sample_ARMA_coef(
+                new_init <- init
+                new_init[mask] <- .sample_ARMA_coef(
                   arma = arma,
                   Mod_bounds = c(0.05, 0.95)
-                )
+                )[mask]
               }
 
               if(transform.pars) {
