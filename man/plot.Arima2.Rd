@@ -21,9 +21,15 @@
 \verb{Arima 2} plot. Type of plot is indicated through \code{roots} parameter.
 }
 \description{
-This function plots time series data loaded from an \code{Arima2} object or plots inverse roots of the AR or MA polynomials in a fitted ARIMA model on the complex unit circle. Note: Layers may be added to \code{Arima2} plots using \code{ggplot2}'s plus operator.
+This function plots time series data loaded from an \code{Arima2} object or plots
+inverse roots of the AR or MA polynomials in a fitted ARIMA model on the
+complex unit circle.
+}
+\details{
+The output of this function is a \code{ggplot} object, so layers may be added to
+the output of this function using \code{ggplot2}'s plus operator.
 }
 \examples{
-mod <- plot(arima(lh, order = c(1,0,1)))
-my_plot <- plot(x = arima(lh, order = c(3,0,1)), roots = FALSE)
+plot(arima(lh, order = c(1,0,1)))
+plot(x = arima(lh, order = c(3,0,1)), roots = FALSE)
 }

@@ -19,12 +19,12 @@
 #' @param upper Numeric upper bound for the profile search.
 #' @param which Integer indicating which parameter to perform the profile over.
 #'    See Details section for more information.
-#' @param ...
+#' @param ... additional arguments needed for the profile function
 #'
-#' @return
+#'
+#' @importFrom methods hasArg
+#' @return data.frame object containing the results of the profile likelihood.
 #' @export
-#'
-#' @examples
 profile.Arima2 <- function(fitted, d = 0, npts = 100L, lower = -1, upper = 1, which = 1L, ...) {
 
   if (!is.numeric(which)) stop("argument `which` must be numeric.")
