@@ -19,13 +19,15 @@
 #' @param upper Numeric upper bound for the profile search.
 #' @param which Integer indicating which parameter to perform the profile over.
 #'    See Details section for more information.
+#' @param max_iters Maximum number of random restarts. See [arima] for more
+#'    details.
 #' @param ... additional arguments needed for the profile function
 #'
 #'
 #' @importFrom methods hasArg
 #' @return data.frame object containing the results of the profile likelihood.
 #' @export
-profile.Arima2 <- function(fitted, d = 0, npts = 100L, lower = -1, upper = 1, which = 1L, ...) {
+profile.Arima2 <- function(fitted, d = 0, npts = 100L, lower = -1, upper = 1, which = 1L, max_iters = 1, ...) {
 
   if (!is.numeric(which)) stop("argument `which` must be numeric.")
   if (!is.numeric(lower) | !is.numeric(upper)) stop('arguments `lower` and `upper` must both be numeric.')
@@ -80,12 +82,12 @@ profile.Arima2 <- function(fitted, d = 0, npts = 100L, lower = -1, upper = 1, wh
     if (has_seasonal) {
       tmp_out <- tryCatch(arima(
         fitted$x, order = fitted_order, seasonal = fitted_seasonal,
-        fixed = tmp_fixed, transform.pars = FALSE, max_iters = 1),
+        fixed = tmp_fixed, transform.pars = FALSE, max_iters = max_iters),
         error = function(e) list(coef = tmp_fixed, loglik = NA))
     } else {
       tmp_out <- tryCatch(arima(
         fitted$x, order = fitted_order,
-        max_iters = 1, fixed = tmp_fixed, transform.pars = FALSE
+        max_iters = max_iters, fixed = tmp_fixed, transform.pars = FALSE
       ),
       error = function(e) list(coef = tmp_fixed, loglik = NA))
     }

@@ -4,7 +4,16 @@
 \alias{profile.Arima2}
 \title{Profile for \code{Arima2} object}
 \usage{
-\method{profile}{Arima2}(fitted, d = 0, npts = 100L, lower = -1, upper = 1, which = 1L, ...)
+\method{profile}{Arima2}(
+  fitted,
+  d = 0,
+  npts = 100L,
+  lower = -1,
+  upper = 1,
+  which = 1L,
+  max_iters = 1,
+  ...
+)
 }
 \arguments{
 \item{fitted}{An \code{Arima2} object that has been fit to data.}
@@ -20,6 +29,9 @@ obtain the \code{fitted} object.}
 
 \item{which}{Integer indicating which parameter to perform the profile over.
 See Details section for more information.}
+
+\item{max_iters}{Maximum number of random restarts. See \link{arima} for more
+details.}
 
 \item{...}{additional arguments needed for the profile function}
 }
