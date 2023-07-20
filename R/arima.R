@@ -197,6 +197,21 @@ arima <- function(x, order = c(0L, 0L, 0L),
   if (is.null(fixed)) fixed <- rep(NA_real_, narma + ncxreg)
   else if(length(fixed) != narma + ncxreg) stop("wrong length for 'fixed'")
   mask <- is.na(fixed)
+
+  # If both 'fixed' and 'init' provided, check that they are
+  # the same (this doesn't affect model fitting, but becomes
+  # important when checking the stationarity of the fitted model,
+  # which only checks the vector init.)
+  if (any(mask)) {
+    if (is.null(init)) {
+      init <- rep(NA_real_, length(fixed))
+      init[!mask] <- fixed[!mask]
+    } else if (any(fixed[!mask] != init[!mask])) {
+      init[!mask] = fixed[!mask]
+      warning("Both arguments 'fixed' and 'init' provided, but provided coefficients did not match: setting non-missing 'init' values to corresponding values of 'fixed'.")
+    }
+  }
+
   ##    if(!any(mask)) stop("all parameters were fixed")
   no.optim <- !any(mask)
   if(no.optim) transform.pars <- FALSE
