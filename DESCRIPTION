@@ -1,6 +1,6 @@
 Package: arima2
 Title: Maximum Likelihood Estimation for ARIMA models 
-Version: 2.0.4
+Version: 2.0.5
 Authors@R: 
     c(
     person("Noel", "McAllister", email = "noelmcp@umich.edu", role = "aut"),
@@ -24,3 +24,6 @@ Config/testthat/edition: 3
 Imports: 
     ggplot2,
     methods
+Depends: 
+    R (>= 2.10)
+LazyData: true
