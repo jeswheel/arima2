@@ -26,9 +26,10 @@
 #'    previous solution. The default corresponds to a one ten-thousandth
 #'    unit increase in log-likelihood.
 #'
-#' @return A matrix containing the model AIC values.
+#' @returns A matrix containing the model AIC values.
 #' @export
 #' @examples
+#' set.seed(654321)
 #' aicTable(presidents, 3, 2)
 aicTable <- function(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_tol = 1e-4){
 
@@ -82,7 +83,7 @@ aicTable <- function(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_t
 #'    models.
 #' @noRd
 #'
-#' @examples .checkTable(presidents, 3, 2)
+#' @examples arima2:::.checkTable(presidents, 3, 2)
 .checkTable <- function(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_tol = 1e-4,
                         method = 'arima2') {
 

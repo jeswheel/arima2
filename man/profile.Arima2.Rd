@@ -51,3 +51,11 @@ coefficients, \eqn{\theta_i} are the MA coefficients, \eqn{\Phi_i} are the
 seasonal AR coefficients, \eqn{\Theta_i} are the seasonal MA coefficients and
 \eqn{\mu} is the model intercept.
 }
+\examples{
+# example code
+set.seed(123)
+mod <- arima(miHuron_level$Average, order = c(1, 0, 1), max_iters = 100)
+prof <- profile(mod, which = 2L, lower = -0.5, upper = 0.5)
+plot(prof$ma1, prof$loglik)
+
+}

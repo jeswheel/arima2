@@ -14,7 +14,8 @@
 #' @param ... Other parameters
 #'
 #' @import ggplot2
-#' @return `Arima 2` plot. Type of plot is indicated through `roots` parameter.
+#' @return `Arima 2` plot, which is a `ggplot2` object. Type of plot is
+#'    indicated through `roots` parameter.
 #' @export
 #'
 #' @examples

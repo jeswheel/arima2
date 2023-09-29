@@ -18,7 +18,8 @@
 \item{...}{Other parameters}
 }
 \value{
-\verb{Arima 2} plot. Type of plot is indicated through \code{roots} parameter.
+\verb{Arima 2} plot, which is a \code{ggplot2} object. Type of plot is
+indicated through \code{roots} parameter.
 }
 \description{
 This function plots time series data loaded from an \code{Arima2} object or plots

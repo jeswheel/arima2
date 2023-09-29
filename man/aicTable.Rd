@@ -45,5 +45,6 @@ Each row for the table corresponds to a different AR value, and each column
 of the table corresponds to a different MA value.
 }
 \examples{
+set.seed(654321)
 aicTable(presidents, 3, 2)
 }

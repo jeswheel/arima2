@@ -24,6 +24,7 @@ This function calculates the roots of the AR or MA polynomials that
 correspond to an ARMA model.
 }
 \examples{
+set.seed(123456)
 ARMApolyroots(sample_ARMA_coef((order = c(2, 1))), type = "AR")
 
 mod <- arima(lh, order = c(3,0,0))

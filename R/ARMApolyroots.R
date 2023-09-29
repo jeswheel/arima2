@@ -11,10 +11,11 @@
 #' @param type character of value "AR" or "MA", indicating whether or not the
 #'     AR or MA polynomial roots are desired.
 #'
-#' @return A numeric vector containing the roots of the MA or AR polynomials
+#' @returns A numeric vector containing the roots of the MA or AR polynomials
 #' @export
 #'
 #' @examples
+#' set.seed(123456)
 #' ARMApolyroots(sample_ARMA_coef((order = c(2, 1))), type = "AR")
 #'
 #' mod <- arima(lh, order = c(3,0,0))

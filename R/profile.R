@@ -25,7 +25,14 @@
 #'
 #'
 #' @importFrom methods hasArg
-#' @return data.frame object containing the results of the profile likelihood.
+#' @returns data.frame object containing the results of the profile likelihood.
+#' @examples
+#' # example code
+#' set.seed(123)
+#' mod <- arima(miHuron_level$Average, order = c(1, 0, 1), max_iters = 100)
+#' prof <- profile(mod, which = 2L, lower = -0.5, upper = 0.5)
+#' plot(prof$ma1, prof$loglik)
+#'
 #' @export
 profile.Arima2 <- function(fitted, d = 0, npts = 100L, lower = -1, upper = 1, which = 1L, max_iters = 1, ...) {
 
