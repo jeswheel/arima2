@@ -36,7 +36,7 @@
 #'    sampled.
 #' @param Mod_bounds Bounds on the magnitude of the roots.
 #'
-#' @return a vector of randomly sampled ARMA coefficients.
+#' @returns a vector of randomly sampled ARMA coefficients.
 #'
 #' @export
 #' @examples {
@@ -329,7 +329,7 @@ sample_ARMA_coef <- function(
 #' @return Coefficients of an AR or MA model that corresponds to the inverse
 #'    roots.
 #'
-#' @examples .roots2poly(.sample_inv_roots(2))
+#' @examples arima2:::.roots2poly(.sample_inv_roots(2))
 #' @noRd
 .roots2poly <- function(inv_roots, type = "ar") {
 
@@ -370,7 +370,7 @@ sample_ARMA_coef <- function(
 #' @return random inverse roots that lie inside the complex unit circle
 #' @noRd
 #'
-#' @examples .sample_inv_roots(2, type = 'unif', Mod_bounds = c(0.05, 0.95))
+#' @examples arima2:::.sample_inv_roots(2, type = 'unif', Mod_bounds = c(0.05, 0.95))
 .sample_inv_roots <- function(n, type = 'unif', Mod_bounds = c(0, 1)) {
 
   if (type == 'beta') {
@@ -400,7 +400,7 @@ sample_ARMA_coef <- function(
 #' @return Boolean. TRUE if AR coefficients correspond to a causal AR model.
 #' @noRd
 #'
-#' @examples .arCheck(c(0.94, -0.1), Mod_bounds = c(0, 1))
+#' @examples arima2:::.arCheck(c(0.94, -0.1), Mod_bounds = c(0, 1))
 .arCheck <- function(ar, Mod_bounds = c(0, 1)) {
   p <- max(which(c(1, -ar) != 0)) - 1
 
@@ -427,7 +427,7 @@ sample_ARMA_coef <- function(
 #' @return Boolean. TRUE if MA coefficients correspond to an invertible MA model.
 #' @noRd
 #'
-#' @examples .maCheck(c(0.94, -0.1), Mod_bounds = c(0, 1))
+#' @examples arima2:::.maCheck(c(0.94, -0.1), Mod_bounds = c(0, 1))
 .maCheck <- function(ma, Mod_bounds = c(0, 1)) {
   p <- max(which(c(1, ma) != 0)) - 1
 
@@ -450,6 +450,28 @@ sample_ARMA_coef <- function(
 #' @return ma coefficients.
 #' @noRd
 .maInvert <- function(ma) {
+
+  #  This function is based on the arima function of the stats package
+  #  of R. Below the copright statement of the arima function is reproduced.
+  #
+  #  File src/library/stats/R/arima.R
+  #  Part of the R package, https://www.R-project.org
+  #
+  #  Copyright (C) 2002-2015 The R Core Team
+  #
+  #  This program is free software; you can redistribute it and/or modify
+  #  it under the terms of the GNU General Public License as published by
+  #  the Free Software Foundation; either version 2 of the License, or
+  #  (at your option) any later version.
+  #
+  #  This program is distributed in the hope that it will be useful,
+  #  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  #  GNU General Public License for more details.
+  #
+  #  A copy of the GNU General Public License is available at
+  #  https://www.R-project.org/Licenses/
+
   q <- length(ma)
   q0 <- max(which(c(1, ma) != 0)) - 1L
   if (!q0)
