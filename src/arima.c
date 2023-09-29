@@ -24,7 +24,7 @@
  *  along with this program; if not, a copy is available at
  *  https://www.R-project.org/Licenses/
  *
- *  Revised: Jan 23, 2023
+ *  Revised: Sep 29, 2023
  */
 
 #ifdef HAVE_CONFIG_H
@@ -36,7 +36,6 @@
 
 #include <R.h>
 #include "ts.h"
-#include "statsR.h" // for getListElement
 
 #ifndef max
 #define max(a,b) ((a < b)?(b):(a))

@@ -1,4 +1,10 @@
 /*
+ *  This file is based on the ts.h file of the stats package of R. Additionally,
+ *  the auxiliary getListElement function comes from the statsR.h file
+ *  of the stats package source code. This function is under the same
+ *  copyright statement.
+ *  Below the copyright statement of the stats package file is reproduced.
+ *
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 2001-2017 The R Core Team.
  *
@@ -96,5 +102,8 @@ SEXP ar2ma(SEXP ar, SEXP npsi);
 SEXP Burg(SEXP x, SEXP order);
 SEXP pp_sum(SEXP u, SEXP sl);
 SEXP intgrt_vec(SEXP x, SEXP xi, SEXP slag);
+
+/* auxiliary */
+SEXP getListElement(SEXP list, char *str);
 
 #endif

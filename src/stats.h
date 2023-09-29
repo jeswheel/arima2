@@ -1,4 +1,7 @@
 /*
+ *  This file is based on the stats.h file of the stats package of R.
+ *  Below the copright statement of the stats package file is reproduced.
+ *
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 2005-2020  The R Core Team
  *
