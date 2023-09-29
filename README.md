@@ -15,16 +15,24 @@ the potential to increase the likelihood of the final output model. By
 design, the function cannot result in models with lower likelihoods than
 that of the `stats::arima` function. The potential for increased model
 likelihoods is obtained at the cost of computational efficiency. The
-function is order $O(n)$ times slower than the `stats::arima` function,
-where $n$ is the number of random restarts. Because the estimation of
-ARIMA models takes only a fraction of a second, we are of the opinion
-that potential to increase model likelihoods is well worth this
-computational cost. The `arima` function is implemented by modifying the
-source code of the `stats::arima` function.
+function is approximately $n$ times slower than the `stats::arima`
+function, where $n$ is the number of random restarts. The benefit of
+trying multiple restarts becomes smaller as the number of available
+observations increases. Because the estimation of ARIMA models takes
+only a fraction of a second on relatively small data sets (less than a
+thousand observations), we are of the opinion that potential to increase
+model likelihoods is well worth this computational cost. The `arima`
+function implementation relies heavily on the source code of the
+`stats::arima` function.
 
 ## Installation
 
-You can install the development version of arima2 from
+``` r
+# Install from CRAN
+install.packages("arima2")
+```
+
+You can install the development version of `arima2` from
 [GitHub](https://github.com/) with:
 
 ``` r
@@ -44,7 +52,7 @@ library(arima2)
 #> 
 #>     arima
 
-set.seed(41319)  
+set.seed(83131)  
 
 # Get model coefficients from ARMA(2, 2)
 coefs <- sample_ARMA_coef(order = c(2, 2))
@@ -65,9 +73,9 @@ arma <- stats::arima(x, order = c(2, 0, 2))
 ```
 
 In the example above, the resulting log-likelihood of the `stats::arima`
-function is -134.89, and the log-likelihood of the `arima` function is
--130.91. For this particular model and dataset, the random restart
-algorithm implemented in `arima2` improved the model likelihood by 3.97
+function is -142.24, and the log-likelihood of the `arima` function is
+-139.91. For this particular model and dataset, the random restart
+algorithm implemented in `arima2` improved the model likelihood by 2.33
 log-likelihood units.
 
 Our package creates a new `S3` object that we call `Arima2`, which
@@ -78,22 +86,55 @@ function will return the AR or MA polynomial roots of the fitted model:
 
 ``` r
 ARMApolyroots(arma2, type = 'AR')
-#> [1] 0.689026+0.7411727i 0.689026-0.7411727i
+#> [1]  -4.464118+0i -15.209006+0i
 ARMApolyroots(arma2, type = 'MA')
-#> [1] 0.6506962+0.7593437i 0.6506962-0.7593437i
+#> [1] -0.9870024+0.665084i -0.9870024-0.665084i
 ```
 
 We have also implemented a `plot.Arima2` function that uses the
-`ggplot2` package so that we can visualize a fitted model.
-
-One can visualize the roots of the fitted model, by specifying the
-argument `roots = TRUE`:
+`ggplot2` package so that we can visualize a fitted model. To compare
+the roots of the model fit using multiple restarts to the model fit
+using `stats::arima`, I will modify the class of the `arma` object so
+that it can easily be plotted.
 
 ``` r
-plot(arma2, roots = TRUE)
+class(arma) <- c("Arima2", class(arma))
+
+plot(arma)
 ```
 
-<img src="man/figures/README-unnamed-chunk-3-1.png" width="100%" />
+<img src="man/figures/README-PlotARMAresults-1.png" width="100%" />
+
+``` r
+plot(arma2)
+```
+
+<img src="man/figures/README-PlotARMAresults-2.png" width="100%" />
 
 Finally, if a user would like help in determining an appropriate number
-of coefficients, we provide the `aicTable` function.
+of coefficients, we provide the `aicTable` function. The package also
+includes an `aicTable` function, which prints the AIC values for all
+ARMA$(p, d, q)$, with $p \leq P$, $q \leq Q$, and $d = D$:
+
+``` r
+tab_results <- aicTable(x, P = 4, Q = 4, D = 0) 
+
+tab_results |> knitr::kable()
+```
+
+|     |      MA0 |      MA1 |      MA2 |      MA3 |      MA4 |
+|:----|---------:|---------:|---------:|---------:|---------:|
+| AR0 | 368.7800 | 302.8397 | 290.2196 | 290.1671 | 291.4220 |
+| AR1 | 319.4248 | 295.5320 | 289.8299 | 291.6313 | 292.9708 |
+| AR2 | 303.4653 | 295.7739 | 291.8176 | 291.5109 | 291.4260 |
+| AR3 | 296.6288 | 296.2828 | 292.9434 | 292.9987 | 293.5101 |
+| AR4 | 295.1954 | 297.1895 | 294.9198 | 294.3391 | 296.1541 |
+
+``` r
+
+P <- which(tab_results == min(tab_results), arr.ind = TRUE)[1] + 1
+Q <- which(tab_results == min(tab_results), arr.ind = TRUE)[2] + 1
+
+print(paste0("p = ", P, "; q = ", Q))
+#> [1] "p = 3; q = 4"
+```

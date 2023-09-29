@@ -4,7 +4,7 @@ output: github_document
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-```{r, include = FALSE}
+```{r setOptions, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -23,13 +23,19 @@ One such function is `arima2::arima`, which provides an interface to estimating 
 This function improves on the functionality of the `stats::arima` method, as it has the potential to increase the likelihood of the final output model.
 By design, the function cannot result in models with lower likelihoods than that of the `stats::arima` function. 
 The potential for increased model likelihoods is obtained at the cost of computational efficiency. 
-The function is order $O(n)$ times slower than the `stats::arima` function, where $n$ is the number of random restarts.
-Because the estimation of ARIMA models takes only a fraction of a second, we are of the opinion that potential to increase model likelihoods is well worth this computational cost.
-The `arima` function is implemented by modifying the source code of the `stats::arima` function. 
+The function is approximately $n$ times slower than the `stats::arima` function, where $n$ is the number of random restarts.
+The benefit of trying multiple restarts becomes smaller as the number of available observations increases. 
+Because the estimation of ARIMA models takes only a fraction of a second on relatively small data sets (less than a thousand observations), we are of the opinion that potential to increase model likelihoods is well worth this computational cost.
+The `arima` function implementation relies heavily on the source code of the `stats::arima` function. 
 
 ## Installation
 
-You can install the development version of arima2 from [GitHub](https://github.com/) with:
+``` r
+# Install from CRAN
+install.packages("arima2")
+```
+
+You can install the development version of `arima2` from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
@@ -43,7 +49,7 @@ This is a basic example which shows you how to solve a common problem:
 ```{r example}
 library(arima2)
 
-set.seed(41319)  
+set.seed(83131)  
 
 # Get model coefficients from ARMA(2, 2)
 coefs <- sample_ARMA_coef(order = c(2, 2))
@@ -70,17 +76,32 @@ Our package creates a new `S3` object that we call `Arima2`, which extends the `
 Once the model has been fit, our package includes some features that help diagnose the fitted model using this new child class.
 For example, `ARMApolyroots` function will return the AR or MA polynomial roots of the fitted model:
 
-```{r}
+```{r getARMAroots}
 ARMApolyroots(arma2, type = 'AR')
 ARMApolyroots(arma2, type = 'MA')
 ```
 
 We have also implemented a `plot.Arima2` function that uses the `ggplot2` package so that we can visualize a fitted model. 
+To compare the roots of the model fit using multiple restarts to the model fit using `stats::arima`, I will modify the class of the `arma` object so that it can easily be plotted. 
 
-One can visualize the roots of the fitted model, by specifying the argument `roots = TRUE`:
+```{r PlotARMAresults}
+class(arma) <- c("Arima2", class(arma))
 
-```{r}
-plot(arma2, roots = TRUE)
+plot(arma)
+plot(arma2)
 ```
 
 Finally, if a user would like help in determining an appropriate number of coefficients, we provide the `aicTable` function.
+The package also includes an `aicTable` function, which prints the AIC values for all ARMA$(p, d, q)$, with $p \leq P$, $q \leq Q$, and $d = D$: 
+
+```{r getAICtable}
+tab_results <- aicTable(x, P = 4, Q = 4, D = 0) 
+
+tab_results |> knitr::kable()
+
+P <- which(tab_results == min(tab_results), arr.ind = TRUE)[1] + 1
+Q <- which(tab_results == min(tab_results), arr.ind = TRUE)[2] + 1
+
+print(paste0("p = ", P, "; q = ", Q))
+```
+
