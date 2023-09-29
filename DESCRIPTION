@@ -1,19 +1,33 @@
 Package: arima2
-Title: Maximum Likelihood Estimation for ARIMA models 
-Version: 2.0.5
+Title: Maximum Likelihood Estimation of ARIMA model parameters 
+Version: 3.0.0
 Authors@R: 
     c(
+    person("Jesse", "Wheeler", email = "jeswheel@umich.edu", role = c("aut", "cre", "cph")),
     person("Noel", "McAllister", email = "noelmcp@umich.edu", role = "aut"),
     person("Dhajanae", "Sylvertooth", email = "dsylvert@umich.edu", role = "aut"),
-    person("Jesse", "Wheeler", email = "jeswheel@umich.edu", role = c("aut", "cre")),
-    person("Edward", "Ionides", role = "ctb"))
-Description: This package provides additional useful interfaces for ARIMA, 
-  and more generally, time series modeling in R. One important function in 
-  this package is arima2, which fits an ARIMA model to univariate time series
-  data using a random restart algorithm. This approach generally leads to
-  improved model fits in the sense that the resulting models will have a model
-  likelihood greater or equal to that of the likelihood obtained by fitting the 
-  same model using the function. 
+    person("Edward", "Ionides", role = "ctb"),
+    person("Brian", "Ripley", role = "ctb", comment = "While not explicitly 
+    listed as the author of the stats::arima function and the corresponding C
+    code, it is our understanding that Brian Ripley was the primary author of 
+    this code. Because we rely heavily on this source code, we would like to 
+    list him as an author of this package."),
+    person("R Core Team", role = "cph", comment = "The arima2 package relies 
+    heavily on the source code from the stats package, which was made by the 
+    R Core team. In particular, all non-binary files in the src directory were 
+    created or based on code from the stats package. Because this package 
+    contains small modifications to the C code for the arima function, 
+    it was necessary to copy or modify each of these files.")
+    )
+Description: This package provides tools for estimating and analyzing auto 
+    regressive integrated moving average (ARIMA) models. The primary function 
+    in this package is 'arima', which fits an ARIMA model to univariate time 
+    series data using a random restart algorithm. This approach generally leads 
+    to improved model fits in the sense that the resulting models will have a 
+    model likelihood greater or equal to that of the likelihood obtained by 
+    fitting the same model using the 'arima' function from the 'stats' package. 
+    This package enables proper optimization of model likelihoods, which is a 
+    necessary condition for performing likelihood ratio tests. 
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -25,5 +39,6 @@ Imports:
     ggplot2,
     methods
 Depends: 
-    R (>= 2.10)
+    R (>= 3.5)
 LazyData: true
+BugReports: https://github.com/jeswheel/arima2/issues/
