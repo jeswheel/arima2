@@ -20,9 +20,44 @@
 #'    previous solution in terms of log-likelihood. The default corresponds to a
 #'    one ten-thousandth unit increase in log-likelihood.
 #' @inheritParams stats::arima
-#' @inherit stats::arima return
+#' @returns
+#' A list of class \code{c("Arima2", "Arima")}. This list contains all of the
+#' same elements as the output of [stats::arima], along with some additional
+#' elements.  All elements of the output list are:
+#' \describe{
+#'    \item{`coef`}{A vector of AR, MA, and regression coefficients. These can
+#'    be extracted by the [stats::coef] method.}
+#'    \item{`sigma2`}{The MLE of the variance of the innovations.}
+#'    \item{`var.coef`}{The estimated variance matrix of the coefficients
+#'     `coef`, which can be extracted by the [stats::vcov] method.}
+#'    \item{`mask`}{A vector containing boolean values, indicating which
+#'     parameters of the model were estimated.}
+#'    \item{`loglik`}{The maximized log-likelihood (of the differenced data).}
+#'    \item{`aic`}{The AIC value corresponding to the log-likelihood.}
+#'    \item{`arma`}{A compact form of the model specification, as a vector
+#'     giving the number of AR, MA, seasonal AR and seasonal MA coefficients,
+#'     plus the period and the number of non-seasonal and seasonal differences.}
+#'    \item{`residuals`}{The fitted innovations.}
+#'    \item{`call`}{The matched call.}
+#'    \item{`series`}{The name of the series x.}
+#'    \item{`code`}{The convergence value returned by [stats::optim].}
+#'    \item{`n.cond`}{The number of initial observations not used in the
+#'     fitting.}
+#'    \item{`nobs`}{The number of observations used for the fitting.}
+#'    \item{`model`}{A list representing the Kalman Filter used in the fitting.}
+#'    \item{`x`}{The input time series.}
+#'    \item{`num_starts`}{Number of restarts before convergence criteria was
+#'    satisfied.}
+#'    \item{`all_values`}{Numeric vector of length `num_starts` containing the
+#'    loglikelihood of every parameter initialization.}
+#' }
 #'
 #' @export
+#' @examples
+#' # example code
+#' set.seed(12345)
+#' arima(miHuron_level$Average, order = c(2, 0, 1), max_iters = 100)
+#'
 #' @useDynLib arima2, ARIMA_transPars, ARIMA_CSS, TSconv, getQ0, getQ0bis, ARIMA_Like, ARIMA_Invtrans, ARIMA_Gradtrans, ARIMA_undoPars, .fixes = "C_"
 arima <- function(x, order = c(0L, 0L, 0L),
                   seasonal = list(order = c(0L, 0L, 0L), period = NA),
@@ -576,54 +611,3 @@ arima <- function(x, order = c(0L, 0L, 0L),
             class = c("Arima2", "Arima"))
 }
 
-
-# get_taus <- function(values) {
-#   taus <- numeric(length(values))
-#   which_tau <- 1
-#   val <- Inf
-#
-#   for (i in (length(values)):1) {
-#     if (values[i] != val) {
-#       val <- values[i]
-#       taus[which_tau] <- i
-#       which_tau <- which_tau + 1
-#     }
-#   }
-#
-#   taus
-# }
-#
-# get_rho <- function(values, taus, epsilon) {
-#   min_val <- values[length(values)]
-#   for (i in 2:length(taus)) {
-#     if (taus[i] == 0) {
-#       break
-#     }
-#     if (values[taus[i]] <= min_val + epsilon) {
-#       next
-#     } else {
-#       break
-#     }
-#   }
-#   i - 1
-# }
-#
-# get_gamma <- function(values, taus, epsilon) {
-#   n <- length(values)
-#   start <- taus[2] + 1
-#
-#   if (start >= n) {
-#     return(0)
-#   } else {
-#     ret_val <- 0
-#     for (i in start:(n - 1)) {
-#       if (values[i] <= values[n] + epsilon) ret_val <- ret_val + 1
-#     }
-#   }
-#   ret_val
-# }
-#
-# get_rho_hat <- function(values, epsilon) {
-#   taus <- get_taus(values)
-#   get_rho(values, taus, epsilon) + get_gamma(values, taus, epsilon)
-# }

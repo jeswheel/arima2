@@ -125,46 +125,45 @@ previous solution in terms of log-likelihood. The default corresponds to a
 one ten-thousandth unit increase in log-likelihood.}
 }
 \value{
-A list of class \code{"Arima"} with components:
-
-  \item{coef}{a vector of AR, MA and regression coefficients, which can
-    be extracted by the \code{\link[stats]{coef}} method.}
-
-  \item{sigma2}{the MLE of the innovations variance.}
-
-  \item{var.coef}{the estimated variance matrix of the coefficients
-    \code{coef}, which can be extracted by the \code{\link[stats]{vcov}} method.}
-
-  \item{loglik}{the maximized log-likelihood (of the differenced data),
-    or the approximation to it used.}
-
-  \item{arma}{A compact form of the specification, as a vector giving
-    the number of AR, MA, seasonal AR and seasonal MA coefficients,
-    plus the period and the number of non-seasonal and seasonal
-    differences.}
-
-  \item{aic}{the AIC value corresponding to the log-likelihood. Only
-    valid for \code{method = "ML"} fits.}
-
-  \item{residuals}{the fitted innovations.}
-
-  \item{call}{the matched call.}
-
-  \item{series}{the name of the series \code{x}.}
-
-  \item{code}{the convergence value returned by \code{\link[stats]{optim}}.}
-
-  \item{n.cond}{the number of initial observations not used in the fitting.}
-
-  \item{nobs}{the number of \dQuote{used} observations for the fitting,
-    can also be extracted via \code{\link[stats]{nobs}()} and is used by
-    \code{\link[stats]{BIC}}.}
-
-  \item{model}{A list representing the Kalman Filter used in the
-    fitting.  See \code{\link[stats]{KalmanLike}}.}
+A list of class \code{c("Arima2", "Arima")}. This list contains all of the
+same elements as the output of \link[stats:arima]{stats::arima}, along with some additional
+elements.  All elements of the output list are:
+\describe{
+\item{\code{coef}}{A vector of AR, MA, and regression coefficients. These can
+be extracted by the \link[stats:coef]{stats::coef} method.}
+\item{\code{sigma2}}{The MLE of the variance of the innovations.}
+\item{\code{var.coef}}{The estimated variance matrix of the coefficients
+\code{coef}, which can be extracted by the \link[stats:vcov]{stats::vcov} method.}
+\item{\code{mask}}{A vector containing boolean values, indicating which
+parameters of the model were estimated.}
+\item{\code{loglik}}{The maximized log-likelihood (of the differenced data).}
+\item{\code{aic}}{The AIC value corresponding to the log-likelihood.}
+\item{\code{arma}}{A compact form of the model specification, as a vector
+giving the number of AR, MA, seasonal AR and seasonal MA coefficients,
+plus the period and the number of non-seasonal and seasonal differences.}
+\item{\code{residuals}}{The fitted innovations.}
+\item{\code{call}}{The matched call.}
+\item{\code{series}}{The name of the series x.}
+\item{\code{code}}{The convergence value returned by \link[stats:optim]{stats::optim}.}
+\item{\code{n.cond}}{The number of initial observations not used in the
+fitting.}
+\item{\code{nobs}}{The number of observations used for the fitting.}
+\item{\code{model}}{A list representing the Kalman Filter used in the fitting.}
+\item{\code{x}}{The input time series.}
+\item{\code{num_starts}}{Number of restarts before convergence criteria was
+satisfied.}
+\item{\code{all_values}}{Numeric vector of length \code{num_starts} containing the
+loglikelihood of every parameter initialization.}
+}
 }
 \description{
 Fit an ARIMA model to a univariate time series. This function builds on
 the ARIMA model fitting approach used in \code{\link[stats:arima]{stats::arima()}} by fitting
 model parameters via a random restart algorithm.
+}
+\examples{
+# example code
+set.seed(12345)
+arima(miHuron_level$Average, order = c(2, 0, 1), max_iters = 100)
+
 }
