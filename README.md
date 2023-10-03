@@ -119,6 +119,7 @@ includes an `aicTable` function, which prints the AIC values for all
 ARMA$(p, d, q)$, with $p \leq P$, $q \leq Q$, and $d = D$:
 
 ``` r
+set.seed(443252)
 tab_results <- aicTable(x, P = 4, Q = 4, D = 0) 
 
 tab_results |> knitr::kable()
@@ -128,17 +129,17 @@ tab_results |> knitr::kable()
 |:----|---------:|---------:|---------:|---------:|---------:|
 | AR0 | 368.7800 | 302.8397 | 290.2196 | 290.1671 | 291.4220 |
 | AR1 | 319.4248 | 295.5320 | 289.8299 | 291.6313 | 292.9708 |
-| AR2 | 303.4653 | 295.7739 | 291.8176 | 291.5109 | 291.3662 |
+| AR2 | 303.4653 | 295.7739 | 291.8176 | 291.5108 | 294.0785 |
 | AR3 | 296.6288 | 296.2828 | 292.9434 | 292.9987 | 293.5101 |
-| AR4 | 295.1954 | 297.1895 | 294.9198 | 294.3391 | 296.1541 |
+| AR4 | 295.1954 | 297.1895 | 294.9198 | 294.3391 | 294.9258 |
 
 ``` r
 
-P <- which(tab_results == min(tab_results), arr.ind = TRUE)[1] + 1
-Q <- which(tab_results == min(tab_results), arr.ind = TRUE)[2] + 1
+P <- which(tab_results == min(tab_results), arr.ind = TRUE)[1] - 1
+Q <- which(tab_results == min(tab_results), arr.ind = TRUE)[2] - 1
 
 print(paste0("p = ", P, "; q = ", Q))
-#> [1] "p = 3; q = 4"
+#> [1] "p = 1; q = 2"
 ```
 
 For more details about this package, please see our arXiv paper:

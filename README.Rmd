@@ -96,12 +96,13 @@ Finally, if a user would like help in determining an appropriate number of coeff
 The package also includes an `aicTable` function, which prints the AIC values for all ARMA$(p, d, q)$, with $p \leq P$, $q \leq Q$, and $d = D$: 
 
 ```{r getAICtable}
+set.seed(443252)
 tab_results <- aicTable(x, P = 4, Q = 4, D = 0) 
 
 tab_results |> knitr::kable()
 
-P <- which(tab_results == min(tab_results), arr.ind = TRUE)[1] + 1
-Q <- which(tab_results == min(tab_results), arr.ind = TRUE)[2] + 1
+P <- which(tab_results == min(tab_results), arr.ind = TRUE)[1] - 1
+Q <- which(tab_results == min(tab_results), arr.ind = TRUE)[2] - 1
 
 print(paste0("p = ", P, "; q = ", Q))
 ```
