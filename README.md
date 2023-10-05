@@ -6,6 +6,8 @@
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/jeswheel/arima2/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/jeswheel/arima2/actions/workflows/R-CMD-check.yaml)
+[![CRAN
+status](https://www.r-pkg.org/badges/version/arima2)](https://CRAN.R-project.org/package=arima2)
 <!-- badges: end -->
 
 The goal of `arima2` is to provide a set of tools to aid in the analysis
