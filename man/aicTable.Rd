@@ -4,7 +4,16 @@
 \alias{aicTable}
 \title{ARIMA AIC table}
 \usage{
-aicTable(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_tol = 1e-04)
+aicTable(
+  data,
+  P,
+  Q,
+  D = 0,
+  max_repeats = 10,
+  max_iters = 100,
+  eps_tol = 1e-04,
+  ...
+)
 }
 \arguments{
 \item{data}{a time series object, or a dataset that can be used as input into
@@ -32,6 +41,8 @@ so by more than \code{eps_tol}.}
 \item{eps_tol}{Tolerance for accepting a new solution to be better than a
 previous solution. The default corresponds to a one ten-thousandth
 unit increase in log-likelihood.}
+
+\item{...}{Additional arguments passed to \code{\link[=arima]{arima()}}.}
 }
 \value{
 A matrix containing the model AIC values.

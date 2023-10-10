@@ -25,13 +25,14 @@
 #' @param eps_tol Tolerance for accepting a new solution to be better than a
 #'    previous solution. The default corresponds to a one ten-thousandth
 #'    unit increase in log-likelihood.
+#' @param ... Additional arguments passed to [arima()].
 #'
 #' @returns A matrix containing the model AIC values.
 #' @export
 #' @examples
 #' set.seed(654321)
 #' aicTable(presidents, 3, 2)
-aicTable <- function(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_tol = 1e-4){
+aicTable <- function(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_tol = 1e-4, ...){
 
   if (!is.numeric(P) | !is.numeric(Q) | !is.numeric(D)) {
     stop("'P', 'Q' and 'D' must be numeric.")
@@ -42,9 +43,9 @@ aicTable <- function(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_t
   D <- as.integer(D)
 
   table <- matrix(NA, (P + 1), (Q + 1))
-  for(p in 0:P) {
-    for(q in 0:Q) {
-      table[p + 1, q + 1] <- arima(data, order = c(p, D, q), max_iters = max_iters)$aic
+  for (p in 0:P) {
+    for (q in 0:Q) {
+      table[p + 1, q + 1] <- arima(data, order = c(p, D, q), max_iters = max_iters, ...)$aic
     }
   }
   dimnames(table) <- list(paste("AR", 0:P, sep = ""), paste("MA", 0:Q, sep = ""))
