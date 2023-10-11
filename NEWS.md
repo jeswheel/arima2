@@ -1,5 +1,7 @@
 # arima2 (development version)
 
+# arima2 3.0.2
+
 * Added `...` argument to `aicTable` function. 
 
 # arima2 3.0.1

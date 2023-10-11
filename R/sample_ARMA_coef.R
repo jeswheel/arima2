@@ -132,13 +132,14 @@ sample_ARMA_coef <- function(
 
   } else {  # Odd number
 
-    ar_coef <- stats::runif(1L, min = -1, max = 1)
-
-    if (ar > 1L) {
+    if (ar == 1L) {
+      rsign <- sample(c(-1, 1), 1)
+      ar_coef <- rsign * stats::runif(1L, min = Mod_bounds[1], max = Mod_bounds[2])
+    } else {
 
       ar_coef <- rep(1, ar)
 
-      while(!.arCheck(ar_coef, Mod_bounds = Mod_bounds)) {
+      while (!.arCheck(ar_coef, Mod_bounds = Mod_bounds)) {
         ar_inv_roots <- .sample_inv_roots((ar - 1L) / 2L, Mod_bounds = Mod_bounds)
         ar_inv_roots_conj <- Conj(ar_inv_roots)
 
@@ -164,13 +165,14 @@ sample_ARMA_coef <- function(
 
   } else {  # Odd number
 
-    ma_coef <- stats::runif(1L, -1, 1)
-
-    if (ma > 1L) {
+    if (ma == 1L) {
+      rsign <- sample(c(-1, 1), 1)
+      ma_coef <- rsign * stats::runif(1L, min = Mod_bounds[1], max = Mod_bounds[2])
+    } else {
 
       ma_coef <- rep(1, ma)
 
-      while(!.maCheck(ma_coef, Mod_bounds = Mod_bounds)) {
+      while (!.maCheck(ma_coef, Mod_bounds = Mod_bounds)) {
         ma_inv_roots <- .sample_inv_roots((ma - 1L) / 2L, Mod_bounds = Mod_bounds)
         ma_inv_roots_conj <- Conj(ma_inv_roots)
 
@@ -199,13 +201,15 @@ sample_ARMA_coef <- function(
     }
 
   } else {  # Odd number
-    ar_seas_coef <- stats::runif(1L, -1, 1)
 
-    if (ar_seas > 1L) {
+    if (ar_seas == 1L) {
+      rsign <- sample(c(-1, 1), 1)
+      ar_seas_coef <- rsign * stats::runif(1L, min = Mod_bounds[1], max = Mod_bounds[2])
+    } else {
 
       ar_seas_coef <- rep(1, ar_seas)
 
-      while(!.arCheck(ar_seas_coef, Mod_bounds = Mod_bounds)) {
+      while (!.arCheck(ar_seas_coef, Mod_bounds = Mod_bounds)) {
         ar_seas_inv_roots <- .sample_inv_roots((ar_seas - 1L) / 2L, Mod_bounds = Mod_bounds)
         ar_seas_inv_roots_conj <- Conj(ar_seas_inv_roots)
 
@@ -215,7 +219,7 @@ sample_ARMA_coef <- function(
             type = 'ar')
         )
 
-        if(max(abs(Im(ar_seas_coef))) > 1e-12) {
+        if (max(abs(Im(ar_seas_coef))) > 1e-12) {
           warning("Check AR coefficients.")
         }
 
@@ -239,13 +243,14 @@ sample_ARMA_coef <- function(
 
   } else {  # Odd number
 
-    ma_seas_coef <- stats::runif(1L, -1, 1)
-
-    if (ma_seas > 1L) {
+    if (ma_seas == 1L) {
+      rsign <- sample(c(-1, 1), 1)
+      ma_seas_coef <- rsign * stats::runif(1L, min = Mod_bounds[1], max = Mod_bounds[2])
+    } else {
 
       ma_seas_coef <- rep(1, ma_seas)
 
-      while(!.maCheck(ma_seas_coef, Mod_bounds = Mod_bounds)) {
+      while (!.maCheck(ma_seas_coef, Mod_bounds = Mod_bounds)) {
         ma_seas_inv_roots <- .sample_inv_roots((ma_seas - 1L) / 2L, Mod_bounds = Mod_bounds)
         ma_seas_inv_roots_conj <- Conj(ma_seas_inv_roots)
 
@@ -297,7 +302,7 @@ sample_ARMA_coef <- function(
     inv_ma_roots <- 1 / ARMApolyroots(out, type = "MA")
   }
 
-  if (arma[1L] !=0 && arma[2L] != 0) {
+  if (arma[1L] != 0 && arma[2L] != 0) {
     min_inv_root_dist <- min(Mod(outer(inv_ar_roots, inv_ma_roots, FUN = '-')))
   } else {
     min_inv_root_dist <- 1
