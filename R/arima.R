@@ -336,7 +336,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
     value <- 2 * n.used * res$value + n.used + n.used * log(2 * pi)
     all_values <- value
   } else {
-    if(method == "CSS-ML") {
+    if (method == "CSS-ML") {
       res <- if(no.optim)
         list(convergence=0L, par=numeric(), value=armaCSS(numeric()))
       else
