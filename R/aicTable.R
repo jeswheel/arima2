@@ -13,18 +13,7 @@
 #' @param Q a positive integer value representing the maximum number of MA
 #'    coefficients that should be included in the table.
 #' @param D a positive integer value representing the degree of differencing
-#' @param max_iters Maximum number of random restarts for methods "CSS-ML" and
-#'    "ML". If set to 1, the results of this algorithm is the same as
-#'    [stats::arima()] if argument \code{diffuseControl} is also set as TRUE.
-#'    \code{max_iters} is often not reached because the condition
-#'    \code{max_repeats} is typically achieved first.
-#' @param max_repeats Integer. If the last \code{max_repeats} random starts did
-#'    not result in improved likelihoods, then stop the search. Each result of
-#'    the optim function is only considered to improve the likelihood if it does
-#'    so by more than \code{eps_tol}.
-#' @param eps_tol Tolerance for accepting a new solution to be better than a
-#'    previous solution. The default corresponds to a one ten-thousandth
-#'    unit increase in log-likelihood.
+#' @param ic Information criterion to be used in the table.
 #' @param ... Additional arguments passed to [arima()].
 #'
 #' @returns A matrix containing the model AIC values.
@@ -32,7 +21,9 @@
 #' @examples
 #' set.seed(654321)
 #' aicTable(presidents, 3, 2)
-aicTable <- function(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_tol = 1e-4, ...){
+aicTable <- function(data, P, Q, D = 0, ic = c('aic', 'aicc'), ...){
+
+  ic <- match.arg(ic)
 
   if (!is.numeric(P) | !is.numeric(Q) | !is.numeric(D)) {
     stop("'P', 'Q' and 'D' must be numeric.")
@@ -45,7 +36,16 @@ aicTable <- function(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_t
   table <- matrix(NA, (P + 1), (Q + 1))
   for (p in 0:P) {
     for (q in 0:Q) {
-      table[p + 1, q + 1] <- arima(data, order = c(p, D, q), max_iters = max_iters, ...)$aic
+      mod <- arima(data, order = c(p, D, q), ...)
+
+      val <- mod$aic
+
+      if (ic == "aicc") {
+        k <- sum(mod$mask) + 1
+        val <- val + (2 * k^2 + 2 * k) / (mod$nobs - k - 1)
+      }
+
+      table[p + 1, q + 1] <- val
     }
   }
   dimnames(table) <- list(paste("AR", 0:P, sep = ""), paste("MA", 0:Q, sep = ""))
@@ -57,6 +57,9 @@ aicTable <- function(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_t
 #' This function is used to check the consistency of an AIC table generated
 #' using the aicTable function (above).
 #'
+#' This function was primarily implemented to help with the ArXiv paper that
+#' describes this package, and for that reason aicc check isn't implemented.
+#'
 #' @param data a time series object, or a dataset that can be used as input into
 #'    the [arima] function.
 #' @param P a positive integer value representing the maximum number of AR
@@ -64,20 +67,13 @@ aicTable <- function(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_t
 #' @param Q a positive integer value representing the maximum number of MA
 #'    coefficients that should be included in the table.
 #' @param D a positive integer value representing the degree of differencing
-#' @param max_iters Maximum number of random restarts for methods "CSS-ML" and
-#'    "ML". If set to 1, the results of this algorithm is the same as
-#'    [stats::arima()] if argument \code{diffuseControl} is also set as TRUE.
-#'    \code{max_iters} is often not reached because the condition
-#'    \code{max_repeats} is typically achieved first.
-#' @param max_repeats Integer. If the last \code{max_repeats} random starts did
-#'    not result in improved likelihoods, then stop the search. Each result of
-#'    the optim function is only considered to improve the likelihood if it does
-#'    so by more than \code{eps_tol}.
-#' @param eps_tol Tolerance for accepting a new solution to be better than a
-#'    previous solution. The default corresponds to a one ten-thousandth
-#'    unit increase in log-likelihood.
 #' @param method string that must be "arima2" or "stats", indicating which
 #'    package should be used to fit the ARIMA model.
+#' @param eps_tol Tolerance for accepting a new solution to be better than a
+#'    previous solution in terms of log-likelihood. The default corresponds to a
+#'    one ten-thousandth unit increase in log-likelihood.
+#' @param ... Additional arguments passed to either [stats::arima()] or
+#'    [arima()], depending on which method is called.
 #'
 #' @return Boolean. True if the table is consistent in the sense that larger
 #'    models have likelihood that is greater than or equal to all smaller
@@ -85,8 +81,7 @@ aicTable <- function(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_t
 #' @noRd
 #'
 #' @examples arima2:::.checkTable(presidents, 3, 2)
-.checkTable <- function(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_tol = 1e-4,
-                        method = 'arima2') {
+.checkTable <- function(data, P, Q, D = 0, method = 'arima2', eps_tol = 1e-4, ...) {
 
   is_consistent = TRUE
 
@@ -103,9 +98,9 @@ aicTable <- function(data, P, Q, D = 0, max_repeats = 10, max_iters = 100, eps_t
     for(q in 0:Q) {
 
       if (method == 'arima2') {
-        table[p + 1, q + 1] <- arima(data, order = c(p, D, q), max_iters = max_iters, max_repeats = max_repeats, eps_tol = eps_tol)$loglik
+        table[p + 1, q + 1] <- arima(data, order = c(p, D, q), ...)$loglik
       } else {
-        table[p + 1, q + 1] <- stats::arima(data, order = c(p, D, q))$loglik
+        table[p + 1, q + 1] <- stats::arima(data, order = c(p, D, q), ...)$loglik
       }
 
       if (q > 0 && table[p + 1, q + 1] + eps_tol < table[p + 1, q]) {
