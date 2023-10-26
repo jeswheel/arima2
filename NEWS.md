@@ -1,5 +1,9 @@
 # arima2 (development version)
 
+# arima2 3.0.4
+
+* Added a check to ensure a random restart is considered an improvement only if it returns a model that has a proper variance matrix for estimated coefficients. 
+
 # arima2 3.0.3
 
 * Added `aicc` option to `aicTable`, and removed superfluous arguments. 

@@ -542,7 +542,12 @@ arima <- function(x, order = c(0L, 0L, 0L),
           )  # End trycatch
         )
 
-        if (restart_result$error == 0 && restart_result$i_value + (eps_tol * 2) < best_value) {
+        # Make sure the best fit also has a proper covariant matrix for coefficients.
+        suppressWarnings(
+          inv_test <- !is.null(restart_result$i_var) && !any(is.nan(sqrt(diag(restart_result$i_var))))
+        )
+
+        if (restart_result$error == 0 && restart_result$i_value + (eps_tol * 2) < best_value && inv_test) {
           best_coef <- restart_result$i_coef
           best_res <- restart_result$i_res
           best_var <- restart_result$i_var
