@@ -16,6 +16,20 @@
 #'    not result in improved likelihoods, then stop the search. Each result of
 #'    the optim function is only considered to improve the likelihood if it does
 #'    so by more than \code{eps_tol}.
+#' @param max_inv_root positive numeric value less than or equal to 1. This
+#'    number represents the maximum size of the inverted
+#'    MA or AR polynomial roots for a new parameter estimate to be considered an
+#'    improvement to previous estimates. Concerns of numeric stability arise
+#'    when the size of polynomial roots are near unity circle. The default value
+#'    1 means that the the parameter values corresponding with the best
+#'    log-likelihood will be returned, even if they are near unity.
+#'    Suitable values of this parameter are near the value 1.
+#' @param min_inv_root_dist positive numeric value less than 1. This number
+#'    represents the minimum distance between AR and MA polynomial roots for a
+#'    new parameter estimate to be considered an improvement on previous
+#'    estimates. This is intended to avoid the possibility of returning
+#'    parameter estimates with nearly canceling roots. Appropriate choices are
+#'    values near 0.
 #' @param eps_tol Tolerance for accepting a new solution to be better than a
 #'    previous solution in terms of log-likelihood. The default corresponds to a
 #'    one ten-thousandth unit increase in log-likelihood.
@@ -70,6 +84,8 @@ arima <- function(x, order = c(0L, 0L, 0L),
                   diffuseControl = TRUE,
                   max_iters = 100,
                   max_repeats = 10,
+                  max_inv_root = 1,
+                  min_inv_root_dist = 0,
                   eps_tol = 1e-4)
 {
 
@@ -152,6 +168,21 @@ arima <- function(x, order = c(0L, 0L, 0L),
     p <- max(which(c(1, -ar) != 0)) - 1
     if(!p) return(TRUE)
     all(Mod(polyroot(c(1, -ar[1L:p]))) > 1)
+  }
+
+  if (max_inv_root < 0) stop("max_inv_root must be positive.")
+  if (min_inv_root_dist > 1 || min_inv_root_dist < 0) stop("min_inv_root_dist must in the interval [0, 1].")
+
+  if (max_inv_root == 1) {
+    do_maxroot_test <- FALSE
+  } else {
+    do_maxroot_test <- TRUE
+  }
+
+  if (min_inv_root_dist == 0) {
+    do_min_dist_test <- FALSE
+  } else {
+    do_min_dist_test <- TRUE
   }
 
   series <- deparse1(substitute(x))
@@ -437,7 +468,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
         # CSS-ML approach of stats::arima is considered a reasonable approach,
         # we use that as a baseline and only get a different result if there is
         # no issues when performing the random restart algorithm. We check
-        # ensure this using the try-catch statement below. We also suppres
+        # ensure this using the try-catch statement below. We also suppress
         # warnings because each random starting point may produce a convergence
         # warning.
 
@@ -544,10 +575,58 @@ arima <- function(x, order = c(0L, 0L, 0L),
 
         # Make sure the best fit also has a proper covariant matrix for coefficients.
         suppressWarnings(
-          inv_test <- !is.null(restart_result$i_var) && !any(is.nan(sqrt(diag(restart_result$i_var))))
+          valid_test <- !is.null(restart_result$i_var) && !any(is.nan(sqrt(diag(restart_result$i_var))))
         )
 
-        if (restart_result$error == 0 && restart_result$i_value + (eps_tol * 2) < best_value && inv_test) {
+        if (do_min_dist_test && !is.null(restart_result$i_coef)) {  # Check if there are (nearly) canceling roots;
+          if (arma[1L] > 0 && arma[2L] > 0) {  # If there are both AR and MA coefs
+            tmp_ar_pars <- restart_result$i_coef[1L:arma[1L]]
+            tmp_ma_pars <- restart_result$i_coef[arma[1L] + 1L:arma[2L]]
+
+            inv_ma_roots  <- 1 / polyroot(c(1, tmp_ma_pars))
+            inv_ar_roots  <- 1 / polyroot(c(1, -tmp_ar_pars))
+            inv_root_dist <- min(Mod(outer(inv_ar_roots, inv_ma_roots, FUN = '-')))
+            valid_test <- valid_test && (inv_root_dist > min_inv_root_dist)
+          }
+
+          if (arma[3L] > 0 && arma[4L] > 0) {  # If there are both seasonal MA and seasonal AR coefs
+            tmp_sar_pars <- restart_result$i_coef[sum(arma[1L:2L]) + 1L:arma[3L]]
+            tmp_sma_pars <- restart_result$i_coef[sum(arma[1L:3L]) + 1L:arma[4L]]
+
+            inv_sma_roots  <- 1 / polyroot(c(1, tmp_sma_pars))
+            inv_sar_roots  <- 1 / polyroot(c(1, -tmp_sar_pars))
+            inv_sroot_dist <- min(Mod(outer(inv_sar_roots, inv_sma_roots, FUN = '-')))
+            valid_test <- valid_test && (inv_sroot_dist > min_inv_root_dist)
+          }
+        }
+
+        if (do_maxroot_test && !is.null(restart_result$i_coef)) {  # Make sure all roots are not near boundary
+          if (arma[1L] > 0) {  # If there are both AR coefs
+            tmp_ar_pars <- restart_result$i_coef[1L:arma[1L]]
+            inv_ar_roots  <- 1 / polyroot(c(1, -tmp_ar_pars))
+            valid_test <- valid_test && (max(Mod(inv_ar_roots)) < max_inv_root)
+          }
+
+          if (arma[2L] > 0) {  # If there are MA coefs
+            tmp_ma_pars <- restart_result$i_coef[arma[1L] + 1L:arma[2L]]
+            inv_ma_roots  <- 1 / polyroot(c(1, tmp_ma_pars))
+            valid_test <- valid_test && (max(Mod(inv_ma_roots)) < max_inv_root)
+          }
+
+          if (arma[3L] > 0) {  # If there are both seasonal MA and seasonal AR coefs
+            tmp_sar_pars <- restart_result$i_coef[sum(arma[1L:2L]) + 1L:arma[3L]]
+            inv_sar_roots  <- 1 / polyroot(c(1, -tmp_sar_pars))
+            valid_test <- valid_test && (max(Mod(inv_sar_roots)) < max_inv_root)
+          }
+
+          if (arma[4L] > 0) {
+            tmp_sma_pars <- restart_result$i_coef[sum(arma[1L:3L]) + 1L:arma[4L]]
+            inv_sma_roots  <- 1 / polyroot(c(1, tmp_sma_pars))
+            valid_test <- valid_test && (max(Mod(inv_sma_roots)) < max_inv_root)
+          }
+        }
+
+        if (restart_result$error == 0 && restart_result$i_value + (eps_tol * 2) < best_value && valid_test) {
           best_coef <- restart_result$i_coef
           best_res <- restart_result$i_res
           best_var <- restart_result$i_var

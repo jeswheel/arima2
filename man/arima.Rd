@@ -22,6 +22,8 @@ arima(
   diffuseControl = TRUE,
   max_iters = 100,
   max_repeats = 10,
+  max_inv_root = 1,
+  min_inv_root_dist = 0,
   eps_tol = 1e-04
 )
 }
@@ -119,6 +121,22 @@ i.e., have a Kalman gain of at least 1e4.}
 not result in improved likelihoods, then stop the search. Each result of
 the optim function is only considered to improve the likelihood if it does
 so by more than \code{eps_tol}.}
+
+\item{max_inv_root}{positive numeric value less than or equal to 1. This
+number represents the maximum size of the inverted
+MA or AR polynomial roots for a new parameter estimate to be considered an
+improvement to previous estimates. Concerns of numeric stability arise
+when the size of polynomial roots are near unity circle. The default value
+1 means that the the parameter values corresponding with the best
+log-likelihood will be returned, even if they are near unity.
+Suitable values of this parameter are near the value 1.}
+
+\item{min_inv_root_dist}{positive numeric value less than 1. This number
+represents the minimum distance between AR and MA polynomial roots for a
+new parameter estimate to be considered an improvement on previous
+estimates. This is intended to avoid the possibility of returning
+parameter estimates with nearly canceling roots. Appropriate choices are
+values near 0.}
 
 \item{eps_tol}{Tolerance for accepting a new solution to be better than a
 previous solution in terms of log-likelihood. The default corresponds to a

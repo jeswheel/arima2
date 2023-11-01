@@ -1,5 +1,11 @@
 # arima2 (development version)
 
+# arima2 3.0.5
+
+* Added `max_inv_root` and `min_inv_root_dist` arguments to `arima`:
+    * `max_inv_root` controls the maximum size of the inverted AR / MA polynomial roots. Defaults to 1. 
+    * `min_inv_root_dist` controls the minimum allowed distance between AR and MA polynomial roots, in order to avoid nearly cancelling roots. Defaults to 0. 
+
 # arima2 3.0.4
 
 * Added a check to ensure a random restart is considered an improvement only if it returns a model that has a proper variance matrix for estimated coefficients. 
