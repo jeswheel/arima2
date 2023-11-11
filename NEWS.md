@@ -1,4 +1,6 @@
-# arima2 (development version)
+# arima2 3.1.0
+
+* Fixed bug with plotting models with only MA or only AR coefficients. 
 
 # arima2 3.0.5
 

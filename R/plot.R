@@ -23,6 +23,14 @@
 #' plot(x = arima(lh, order = c(3,0,1)), roots = FALSE)
 plot.Arima2 <- function(x, roots = TRUE, title = NULL, tick.lab = NULL, ...) {
 
+  ars <- sum(grepl("^ar[[:digit:]]$", names(stats::coef(x))))
+  mas <- sum(grepl("^ma[[:digit:]]$", names(stats::coef(x))))
+
+  if (roots && ars == 0 && mas == 0) {
+    warning("Oject 'x' does not have any AR of MA coefficients. Setting 'roots = FALSE'.")
+    roots <- FALSE
+  }
+
   if(!is.null(title) & !is.character(title))stop("'title' should be character type.")
   if(!is.logical(roots))stop("'roots' should be logical type.")
   if(roots == FALSE){
@@ -85,20 +93,32 @@ plot.Arima2 <- function(x, roots = TRUE, title = NULL, tick.lab = NULL, ...) {
   ## displays all inverse roots within unit circle
   else{
 
-    ar_inv_roots <- 1 / ARMApolyroots(x)
-    ma_inv_roots <- 1 / ARMApolyroots(x, type = "MA")
+    if (ars > 0) {
+      ar_inv_roots <- 1 / ARMApolyroots(x)
 
-    ar_df <- data.frame(
-      root_type = "AR",
-      value = ar_inv_roots
-    )
+      ar_df <- data.frame(
+        root_type = "AR",
+        value = ar_inv_roots
+      )
+    }
 
-    ma_df <- data.frame(
-      root_type = "MA",
-      value = ma_inv_roots
-    )
+    if (mas > 0) {
+      ma_inv_roots <- 1 / ARMApolyroots(x, type = "MA")
 
-    all_roots <- rbind(ar_df, ma_df)
+      ma_df <- data.frame(
+        root_type = "MA",
+        value = ma_inv_roots
+      )
+    }
+
+    if (mas > 0 && ars > 0) {
+      all_roots <- rbind(ar_df, ma_df)
+    } else if (mas > 0) {
+      all_roots <- ma_df
+    } else {
+      all_roots <- ar_df
+    }
+
     all_roots$Real <- Re(all_roots$value)
     all_roots$Imaginary <- Im(all_roots$value)
     all_roots$inside <- ifelse(Mod(all_roots$value) < 1, "inside", "outside")
