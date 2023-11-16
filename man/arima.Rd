@@ -2,7 +2,7 @@
 % Please edit documentation in R/arima.R
 \name{arima}
 \alias{arima}
-\title{ARIMA Modelling of Time Series}
+\title{ARIMA Modeling of Time Series}
 \usage{
 arima(
   x,

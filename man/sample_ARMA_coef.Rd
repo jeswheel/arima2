@@ -19,7 +19,7 @@ length two of the form \eqn{(p, q)}.}
 
 \item{seasonal}{A specification of the seasonal part of the ARIMA model. Can
 be either a vector of length 2, or a list with an \code{order} component; if
-a list, aperiod can be included, but it does not affect the function
+a list, a period can be included, but it does not affect the function
 output.}
 
 \item{n}{An integer indicating how many sets of ARMA coefficients should be

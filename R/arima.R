@@ -1,4 +1,4 @@
-#' ARIMA Modelling of Time Series
+#' ARIMA Modeling of Time Series
 #'
 #' Fit an ARIMA model to a univariate time series. This function builds on
 #' the ARIMA model fitting approach used in [stats::arima()] by fitting

@@ -1,5 +1,7 @@
 # arima2 (development version)
 
+* Fixed minor spelling errors in documentation.
+
 # arima2 3.1.0
 
 * Fixed bug with plotting models with only MA or only AR coefficients. 
@@ -8,7 +10,7 @@
 
 * Added `max_inv_root` and `min_inv_root_dist` arguments to `arima`:
     * `max_inv_root` controls the maximum size of the inverted AR / MA polynomial roots. Defaults to 1. 
-    * `min_inv_root_dist` controls the minimum allowed distance between AR and MA polynomial roots, in order to avoid nearly cancelling roots. Defaults to 0. 
+    * `min_inv_root_dist` controls the minimum allowed distance between AR and MA polynomial roots, in order to avoid nearly canceling roots. Defaults to 0. 
 
 # arima2 3.0.4
 
