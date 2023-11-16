@@ -99,7 +99,7 @@ We have also implemented a `plot.Arima2` function that uses the
 `ggplot2` package so that we can visualize a fitted model. To compare
 the roots of the model fit using multiple restarts to the model fit
 using `stats::arima`, I will modify the class of the `arma` object so
-that it can easily be plotted.
+that it can easily be plotted:
 
 ``` r
 class(arma) <- c("Arima2", class(arma))
