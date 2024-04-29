@@ -8,7 +8,8 @@ sample_ARMA_coef(
   order = c(0L, 0L),
   seasonal = list(order = c(0L, 0L), period = NA),
   n = 1,
-  Mod_bounds = c(0.05, 0.95)
+  Mod_bounds = c(0.05, 0.95),
+  min_inv_root_dist = 0
 )
 }
 \arguments{
@@ -26,6 +27,14 @@ output.}
 sampled.}
 
 \item{Mod_bounds}{Bounds on the magnitude of the roots.}
+
+\item{min_inv_root_dist}{This parameter is included so as to help avoid ARMA
+models that contain parameter redundancy, if desired. Specifically,
+this parameter ensures that the minimum distance between any of the
+inverted roots in the AR and MA polynomials is greater than
+\code{min_inv_root_dist}. Inverted roots that are near each other leads to
+canceling or nearly canceling roots, effectively reducing the size of the
+ARMA model.}
 }
 \value{
 a vector of randomly sampled ARMA coefficients.
@@ -51,10 +60,8 @@ complex unit circle, and then calculating the resulting polynomial.
 To ensure that the resulting polynomial coefficients are real, we only sample
 half of the needed number of complex roots, and set the remaining half to be
 the complex conjugate of the sampled points. In the case where the number of
-coefficients is odd, the first coefficient is sampled as a real number
-between 0-1, the remaining roots are sampled as described, and then the
-resulting polynomial is checked to ensure all roots lie outside the unit
-circle; if not, we resample the coefficients.
+coefficients is odd, the remaining root is sampled uniformly, satisfying the
+Mod_bounds parameter.
 }
 \examples{
 {

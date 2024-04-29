@@ -1,6 +1,6 @@
 Package: arima2
 Title: Likelihood Based Inference for ARIMA Modeling
-Version: 3.1.0.9001
+Version: 3.2.1.9000
 Authors@R: 
     c(
     person("Jesse", 
@@ -39,7 +39,7 @@ Description: Estimating and analyzing auto regressive integrated moving average
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3

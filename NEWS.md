@@ -1,6 +1,14 @@
 # arima2 (development version)
 
+# arima2 3.2.1
+
+* Fixed minor bug in `arima.R` function that occured when `include.mean = TRUE` and some parameters are already fixed.
+
+# arima2 3.2.0
+
 * Fixed minor spelling errors in documentation.
+* Refactored `sample_ARMA_coef.R`. The new function is faster than the original, includes the capability to manually set the minimum acceptable distance between inverted roots, and is easier to read. 
+* Package tests have been updated with the new version of the `sample_ARMA_coef.R` function. 
 
 # arima2 3.1.0
 

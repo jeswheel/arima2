@@ -482,13 +482,15 @@ arima <- function(x, order = c(0L, 0L, 0L),
                 new_init[mask] <- .sample_ARMA_coef(
                   arma = arma,
                   intercept = init[length(init)],
-                  Mod_bounds = c(0.05, 0.95)[mask]
-                )
+                  Mod_bounds = c(0.05, 0.95),
+                  min_inv_root_dist = 0.01
+                )[mask]
               } else {
                 new_init <- init
                 new_init[mask] <- .sample_ARMA_coef(
                   arma = arma,
-                  Mod_bounds = c(0.05, 0.95)
+                  Mod_bounds = c(0.05, 0.95),
+                  min_inv_root_dist = 0.01
                 )[mask]
               }
 

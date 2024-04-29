@@ -19,10 +19,8 @@
 #' To ensure that the resulting polynomial coefficients are real, we only sample
 #' half of the needed number of complex roots, and set the remaining half to be
 #' the complex conjugate of the sampled points. In the case where the number of
-#' coefficients is odd, the first coefficient is sampled as a real number
-#' between 0-1, the remaining roots are sampled as described, and then the
-#' resulting polynomial is checked to ensure all roots lie outside the unit
-#' circle; if not, we resample the coefficients.
+#' coefficients is odd, the remaining root is sampled uniformly, satisfying the
+#' Mod_bounds parameter.
 #'
 #' @param order A specification of the non-seasonal part of the ARIMA model:
 #'    this is different than the `order` input of [stats::arima()], because
@@ -35,6 +33,13 @@
 #' @param n An integer indicating how many sets of ARMA coefficients should be
 #'    sampled.
 #' @param Mod_bounds Bounds on the magnitude of the roots.
+#' @param min_inv_root_dist This parameter is included so as to help avoid ARMA
+#'    models that contain parameter redundancy, if desired. Specifically,
+#'    this parameter ensures that the minimum distance between any of the
+#'    inverted roots in the AR and MA polynomials is greater than
+#'    `min_inv_root_dist`. Inverted roots that are near each other leads to
+#'    canceling or nearly canceling roots, effectively reducing the size of the
+#'    ARMA model.
 #'
 #' @returns a vector of randomly sampled ARMA coefficients.
 #'
@@ -50,7 +55,8 @@ sample_ARMA_coef <- function(
     order = c(0L, 0L),
     seasonal = list(order = c(0L, 0L), period = NA),
     n = 1,
-    Mod_bounds = c(0.05, 0.95)
+    Mod_bounds = c(0.05, 0.95),
+    min_inv_root_dist = 0.0
 ) {
 
   if (!inherits(Mod_bounds, "numeric")) {
@@ -75,6 +81,15 @@ sample_ARMA_coef <- function(
     seasonal <- seasonal$order
   }
 
+  if (!is.numeric(min_inv_root_dist)) {
+    stop("min_inv_root_dist must be numeric.")
+  } else if (min_inv_root_dist < 0) {
+    stop("min_inv_root_dist must be positive.")
+  } else if (min_inv_root_dist > 1) {
+    warning("min_inv_root_dist is too large. Consider lowering for improved efficiency.")
+  }
+
+
   if (length(order) != 2) {
     stop("`order` should have length == 2.")
   }
@@ -88,9 +103,9 @@ sample_ARMA_coef <- function(
   )
 
   if (n == 1L) {
-    res <- .sample_ARMA_coef(arma, Mod_bounds = Mod_bounds)
+    res <- .sample_ARMA_coef(arma, Mod_bounds = Mod_bounds, min_inv_root_dist = min_inv_root_dist)
   } else {
-    res <- t(replicate(n, .sample_ARMA_coef(arma, Mod_bounds = Mod_bounds)))
+    res <- t(replicate(n, .sample_ARMA_coef(arma, Mod_bounds = Mod_bounds, min_inv_root_dist = min_inv_root_dist)))
   }
 
   res
@@ -101,6 +116,8 @@ sample_ARMA_coef <- function(
 #' @param arma vector of integers c(ar, ma, ar_seas, ma_seas, period, i, i_seas)
 #' @param intercept If missing, the intercept is assumed fixed. Otherwise,
 #'    new intercept values are sampled near the value of `intercept`.
+#' @param min_inv_root_dist minimum allowable distance between inverted AR and
+#'    MA polynomial roots, used to avoid models with parametric redundancies.
 #' @param Mod_bounds Bounds on the magnitude of the roots.
 #'
 #' This function does an internal check to make sure the resulting
@@ -111,6 +128,7 @@ sample_ARMA_coef <- function(
 #' @return a vector of randomly sampled ARMA coefficients.
 #' @noRd
 .sample_ARMA_coef <- function(arma, intercept,
+                              min_inv_root_dist,
                               Mod_bounds) {
 
   # get number of coefficients
@@ -119,149 +137,51 @@ sample_ARMA_coef <- function(
   ar_seas <- arma[3L]
   ma_seas <- arma[4L]
 
-  if (ar %% 2L == 0L) {  # Even number
+  ar_coef <- numeric(ar)
+  ma_coef <- numeric(ma)
+  ar_seas_coef <- numeric(ar_seas)
+  ma_seas_coef <- numeric(ma_seas)
 
-    if (ar == 0L) {
-      ar_coef <- c()
-    } else {
-      ar_inv_roots <- .sample_inv_roots(ar / 2L, Mod_bounds = Mod_bounds)
-      ar_inv_roots_conj <- Conj(ar_inv_roots)
+  par_names <- c()
 
-      ar_coef <- Re(.roots2poly(c(ar_inv_roots, ar_inv_roots_conj), type = 'ar'))
+  if (ar != 0 & ma != 0) {  # Both AR and MA need sampling, check for canceling root.
+    min_dist <- 0
+    while (min_dist <= min_inv_root_dist) {
+      ar_inv_roots <- .sample_inv_roots(n = ar, Mod_bounds = Mod_bounds)
+      ma_inv_roots <- .sample_inv_roots(n = ma, Mod_bounds = Mod_bounds)
+      min_dist <- min(Mod(outer(ar_inv_roots, ma_inv_roots, FUN = '-')))
     }
+    ar_coef <- .roots2coef(ar_inv_roots, type = 'ar')
+    ma_coef <- .roots2coef(ma_inv_roots, type = 'ma')
 
-  } else {  # Odd number
-
-    if (ar == 1L) {
-      rsign <- sample(c(-1, 1), 1)
-      ar_coef <- rsign * stats::runif(1L, min = Mod_bounds[1], max = Mod_bounds[2])
-    } else {
-
-      ar_coef <- rep(1, ar)
-
-      while (!.arCheck(ar_coef, Mod_bounds = Mod_bounds)) {
-        ar_inv_roots <- .sample_inv_roots((ar - 1L) / 2L, Mod_bounds = Mod_bounds)
-        ar_inv_roots_conj <- Conj(ar_inv_roots)
-
-        ar_coef <- Re(
-          .roots2poly(c(stats::runif(1L, -1, 1), ar_inv_roots, ar_inv_roots_conj), type = 'ar')
-        )
-      }
-    }
+    par_names <- c(par_names, paste0("ar", 1:arma[1L]))
+    par_names <- c(par_names, paste0("ma", 1:arma[2L]))
+  } else if (ar != 0) {
+    par_names <- c(par_names, paste0("ar", 1:arma[1L]))
+    ar_coef <- .roots2coef(.sample_inv_roots(ar, Mod_bounds = Mod_bounds), type = 'ar')
+  } else if (ma != 0) {
+    par_names <- c(par_names, paste0("ma", 1:arma[2L]))
+    ma_coef <- .roots2coef(.sample_inv_roots(ma, Mod_bounds = Mod_bounds), type = 'ma')
   }
 
-  if (ma %% 2L == 0L) {  # Even number
-
-    if (ma == 0L) {
-      ma_coef <- c()
-    } else {
-      ma_inv_roots <- .sample_inv_roots(ma / 2L, Mod_bounds = Mod_bounds)
-      ma_inv_roots_conj <- Conj(ma_inv_roots)
-
-      ma_coef <- Re(
-        .roots2poly(c(ma_inv_roots, ma_inv_roots_conj), type = 'ma')
-      )
+  if (ar_seas != 0 & ma_seas != 0) {  # Both AR and MA need sampling, check for canceling root.
+    min_dist <- 0
+    while (min_dist <= min_inv_root_dist) {
+      ar_inv_roots <- .sample_inv_roots(ar_seas, Mod_bounds = Mod_bounds)
+      ma_inv_roots <- .sample_inv_roots(ma_seas, Mod_bounds = Mod_bounds)
+      min_dist <- min(Mod(outer(ar_inv_roots, ma_inv_roots, FUN = '-')))
     }
+    ar_seas_coef <- .roots2coef(ar_inv_roots, type = 'ar')
+    ma_seas_coef <- .roots2coef(ma_inv_roots, type = 'ma')
 
-  } else {  # Odd number
-
-    if (ma == 1L) {
-      rsign <- sample(c(-1, 1), 1)
-      ma_coef <- rsign * stats::runif(1L, min = Mod_bounds[1], max = Mod_bounds[2])
-    } else {
-
-      ma_coef <- rep(1, ma)
-
-      while (!.maCheck(ma_coef, Mod_bounds = Mod_bounds)) {
-        ma_inv_roots <- .sample_inv_roots((ma - 1L) / 2L, Mod_bounds = Mod_bounds)
-        ma_inv_roots_conj <- Conj(ma_inv_roots)
-
-        ma_coef <- Re(
-          .roots2poly(
-            c(stats::runif(1L, -1, 1), ma_inv_roots, ma_inv_roots_conj),
-            type = 'ma'
-          )
-        )
-      }
-    }
-  }
-
-
-  if (ar_seas %% 2L == 0L) {  # Even number
-
-    if (ar_seas == 0L) {
-      ar_seas_coef <- c()
-    } else {
-      ar_seas_inv_roots <- .sample_inv_roots(ar_seas / 2L, Mod_bounds = Mod_bounds)
-      ar_seas_inv_roots_conj <- Conj(ar_seas_inv_roots)
-
-      ar_seas_coef <- Re(
-        .roots2poly(c(ar_seas_inv_roots, ar_seas_inv_roots_conj), type = 'ar')
-      )
-    }
-
-  } else {  # Odd number
-
-    if (ar_seas == 1L) {
-      rsign <- sample(c(-1, 1), 1)
-      ar_seas_coef <- rsign * stats::runif(1L, min = Mod_bounds[1], max = Mod_bounds[2])
-    } else {
-
-      ar_seas_coef <- rep(1, ar_seas)
-
-      while (!.arCheck(ar_seas_coef, Mod_bounds = Mod_bounds)) {
-        ar_seas_inv_roots <- .sample_inv_roots((ar_seas - 1L) / 2L, Mod_bounds = Mod_bounds)
-        ar_seas_inv_roots_conj <- Conj(ar_seas_inv_roots)
-
-        ar_seas_coef <- Re(
-          .roots2poly(
-            c(stats::runif(1L, -1, 1), ar_seas_inv_roots, ar_seas_inv_roots_conj),
-            type = 'ar')
-        )
-
-        if (max(abs(Im(ar_seas_coef))) > 1e-12) {
-          warning("Check AR coefficients.")
-        }
-
-        ar_seas_coef <- Re(ar_seas_coef)
-      }
-    }
-  }
-
-  if (ma_seas %% 2L == 0L) {  # Even number
-
-    if (ma_seas == 0L) {
-      ma_seas_coef <- c()
-    } else {
-      ma_seas_inv_roots <- .sample_inv_roots(ma_seas / 2L, Mod_bounds = Mod_bounds)
-      ma_seas_inv_roots_conj <- Conj(ma_seas_inv_roots)
-
-      ma_seas_coef <- Re(
-        .roots2poly(c(ma_seas_inv_roots, ma_seas_inv_roots_conj), type = 'ma')
-      )
-    }
-
-  } else {  # Odd number
-
-    if (ma_seas == 1L) {
-      rsign <- sample(c(-1, 1), 1)
-      ma_seas_coef <- rsign * stats::runif(1L, min = Mod_bounds[1], max = Mod_bounds[2])
-    } else {
-
-      ma_seas_coef <- rep(1, ma_seas)
-
-      while (!.maCheck(ma_seas_coef, Mod_bounds = Mod_bounds)) {
-        ma_seas_inv_roots <- .sample_inv_roots((ma_seas - 1L) / 2L, Mod_bounds = Mod_bounds)
-        ma_seas_inv_roots_conj <- Conj(ma_seas_inv_roots)
-
-        ma_seas_coef <- Re(
-          .roots2poly(
-            c(stats::runif(1L, -1, 1), ma_seas_inv_roots, ma_seas_inv_roots_conj),
-            type = 'ma'
-          )
-        )
-      }
-    }
+    par_names <- c(par_names, paste0("ar_seas", 1:arma[3L]))
+    par_names <- c(par_names, paste0("ma_seas", 1:arma[4L]))
+  } else if (ar_seas != 0) {
+    ar_seas_coef <- .roots2coef(.sample_inv_roots(ar_seas, Mod_bounds = Mod_bounds), type = 'ar')
+    par_names <- c(par_names, paste0("ar_seas", 1:arma[3L]))
+  } else if (ma_seas != 0) {
+    ma_seas_coef <- .roots2coef(.sample_inv_roots(ma_seas, Mod_bounds = Mod_bounds), type = 'ma')
+    par_names <- c(par_names, paste0("ma_seas", 1:arma[4L]))
   }
 
   out <- if (!missing(intercept)) {
@@ -270,61 +190,20 @@ sample_ARMA_coef <- function(
     c(ar_coef, ma_coef, ar_seas_coef, ma_seas_coef)
   }
 
-  par_names <- c()
-
-  if (arma[1L] != 0) {
-    par_names <- paste0("ar", 1:arma[1L])
-  }
-
-  if (arma[2L] != 0) {
-    par_names <- c(par_names, paste0("ma", 1:arma[2L]))
-  }
-
-  if (arma[3L] != 0) {
-    par_names <- c(par_names, paste0("ar_seas", 1:arma[3L]))
-  }
-
-  if (arma[4L] != 0) {
-    par_names <- c(par_names, paste0("ma_seas", 1:arma[4L]))
-  }
-
   if (!missing(intercept)) {
     par_names <- c(par_names, "intercept")
   }
 
   names(out) <- par_names
 
-  if (arma[1L] != 0) {
-    inv_ar_roots <- 1 / ARMApolyroots(out)
-  }
-
-  if (arma[2L] != 0) {
-    inv_ma_roots <- 1 / ARMApolyroots(out, type = "MA")
-  }
-
-  if (arma[1L] != 0 && arma[2L] != 0) {
-    min_inv_root_dist <- min(Mod(outer(inv_ar_roots, inv_ma_roots, FUN = '-')))
-  } else {
-    min_inv_root_dist <- 1
-  }
-
-  if (min_inv_root_dist < 0.05) {
-    return(.sample_ARMA_coef(
-      arma = arma, intercept = intercept,
-      Mod_bounds = Mod_bounds
-    )
-    )
-  } else {
-    return(out)
-  }
+  return(out)
 }
 
-#' Roots 2 poly
+#' Roots 2 coef
 #'
 #' This function converts the inverse roots of an AR or MA polynomial and
 #' calculates the corresponding polynomial, i.e., the coefficients of the
 #' ARMA model
-#'
 #'
 #' @param inv_roots vector of inverse polynomial roots. Each should be complex
 #'    numbers that lie within the complex-unit circle.
@@ -334,21 +213,18 @@ sample_ARMA_coef <- function(
 #' @return Coefficients of an AR or MA model that corresponds to the inverse
 #'    roots.
 #'
-#' @examples arima2:::.roots2poly(.sample_inv_roots(2))
+#' @examples arima2:::.roots2coef(.sample_inv_roots(2))
 #' @noRd
-.roots2poly <- function(inv_roots, type = "ar") {
+.roots2coef <- function(inv_roots, type = "ar") {
 
   if (!type %in% c("ar", "ma")) {
     stop("Type must be 'ar' or 'ma'")
   }
 
-  n_coef <- length(inv_roots)
-  coefs <- numeric(n_coef)
-  for (i in 1:n_coef) {
-    coefs[i] <- utils::combn(x = inv_roots, m = i) |>
-      apply(2, prod) |>
-      sum() * (-1)^i
-  }
+  x <- 1
+  roots <- 1 / inv_roots
+  for (r in roots) x <- c(x, 0) - c(0, x)/r
+  coefs <- Re(x[-1L])
 
   if (type == 'ar') {
     -coefs
@@ -379,16 +255,24 @@ sample_ARMA_coef <- function(
 .sample_inv_roots <- function(n, type = 'unif', Mod_bounds = c(0, 1)) {
 
   if (type == 'beta') {
-    R <- stats::rbeta(n, 2.5, 4)
-    Theta <- pi * stats::runif(n)
+    R <- stats::rbeta(n %/% 2, 2.5, 4)
+    Theta <- pi * stats::runif(n %/% 2)
   } else if (type == 'unif') {
-    R <- stats::runif(n, Mod_bounds[1], Mod_bounds[2])
-    Theta <- pi * stats::runif(n)
+    R <- stats::runif(n %/% 2, Mod_bounds[1], Mod_bounds[2])
+    Theta <- pi * stats::runif(n %/% 2)
   } else {
     stop("Not valid sampling type")
   }
 
-  complex(real = R * cos(Theta), imaginary = R * sin(Theta))
+  complex_roots <- complex(real = R * cos(Theta), imaginary = R * sin(Theta))
+  inv_roots <- c(complex_roots, Conj(complex_roots))
+
+  if (n %% 2 == 1) {
+    re_inv_root <- sample(c(-1, 1), 1) * stats::runif(1, min = Mod_bounds[1], Mod_bounds[2])
+    inv_roots <- c(inv_roots, re_inv_root)
+  }
+
+  inv_roots
 }
 
 #' AR Check
