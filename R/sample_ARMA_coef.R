@@ -254,18 +254,31 @@ sample_ARMA_coef <- function(
 #' @examples arima2:::.sample_inv_roots(2, type = 'unif', Mod_bounds = c(0.05, 0.95))
 .sample_inv_roots <- function(n, type = 'unif', Mod_bounds = c(0, 1)) {
 
+  n_complex_pairs <- stats::rbinom(1, size = n %/% 2, prob = 1 - sqrt(0.5)) # 1 - sqrt(0.5)
+  n_real_pairs <- max(0, n %/% 2 - n_complex_pairs)
+
   if (type == 'beta') {
-    R <- stats::rbeta(n %/% 2, 2.5, 4)
-    Theta <- pi * stats::runif(n %/% 2)
+    R <- stats::rbeta(n_complex_pairs, 2.5, 4)
+    Theta <- pi * stats::runif(n_complex_pairs)
   } else if (type == 'unif') {
-    R <- stats::runif(n %/% 2, Mod_bounds[1], Mod_bounds[2])
-    Theta <- pi * stats::runif(n %/% 2)
+    R <- stats::runif(n_complex_pairs, Mod_bounds[1], Mod_bounds[2])
+    Theta <- pi * stats::runif(n_complex_pairs)
   } else {
     stop("Not valid sampling type")
   }
 
   complex_roots <- complex(real = R * cos(Theta), imaginary = R * sin(Theta))
   inv_roots <- c(complex_roots, Conj(complex_roots))
+
+  real_pairs <- matrix(nrow = n_real_pairs, ncol = 2)
+
+  same_sign <- stats::rbinom(n_real_pairs, 1, 2 * sqrt(0.5) - 1) |> as.logical()
+  flip_col <- sample(c(1, 2), size = sum(same_sign), replace = TRUE)
+  real_pairs[same_sign, ] <- stats::runif(2*sum(same_sign), Mod_bounds[1], Mod_bounds[2]) * sample(c(-1, 1), size = sum(same_sign), replace = TRUE)
+  # real_pairs[same_sign, ] <- real_pairs[same_sign, ] * sample(c(-1, 1), size = sum(same_sign), replace = TRUE)
+  real_pairs[!same_sign, ] <- sample(c(-1, 1), 2 * (n_real_pairs - sum(same_sign)), replace = TRUE) * stats::runif(2 * (n_real_pairs - sum(same_sign)), Mod_bounds[1], Mod_bounds[2])
+  real_pairs[cbind(which(same_sign), flip_col)] <- -1 * real_pairs[cbind(which(same_sign), flip_col)]
+  inv_roots <- c(inv_roots, as.numeric(real_pairs))
 
   if (n %% 2 == 1) {
     re_inv_root <- sample(c(-1, 1), 1) * stats::runif(1, min = Mod_bounds[1], Mod_bounds[2])
