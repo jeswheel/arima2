@@ -55,34 +55,27 @@ library(arima2)
 #> The following object is masked from 'package:stats':
 #> 
 #>     arima
-```
 
-``` r
+set.seed(851348)
 
-set.seed(83131)  
+coefs <- c("ar1" = -0.3, "ar2" = -0.3, 'ma1' = -0.2, 'ma2' = 0.1)
+intercept <- 20
 
-# Get model coefficients from ARMA(2, 2)
-coefs <- sample_ARMA_coef(order = c(2, 2))
-
-# Get model intercept 
-intercept <- rnorm(1, sd = 50)
-
-# Generate data from ARMA model 
+# Generate data from ARMA model
 x <- intercept + arima.sim(
-  n = 100, 
-  model = list(ar = coefs[grepl("^ar[[:digit:]]+", names(coefs))], 
+  n = 100,
+  model = list(ar = coefs[grepl("^ar[[:digit:]]+", names(coefs))],
                ma = coefs[grepl("^ma[[:digit:]]+", names(coefs))])
 )
 
-# Fit ARMA model using arima2 and stats::arima 
-arma2 <- arima(x, order = c(2, 0, 2), max_iters = 20)
-arma <- stats::arima(x, order = c(2, 0, 2))
+arma <- stats::arima(x, order = c(2, 0, 2), SSinit = "Rossignol2011")
+arma2 <- arima2::arima(x, order = c(2, 0, 2), SSinit = "Rossignol2011")
 ```
 
 In the example above, the resulting log-likelihood of the `stats::arima`
-function is -139.87, and the log-likelihood of the `arima` function is
--139.87. For this particular model and dataset, the random restart
-algorithm implemented in `arima2` improved the model likelihood by 0
+function is -121.49, and the log-likelihood of the `arima` function is
+-119.1. For this particular model and dataset, the random restart
+algorithm implemented in `arima2` improved the model likelihood by 2.39
 log-likelihood units.
 
 Our package creates a new `S3` object that we call `Arima2`, which
@@ -93,12 +86,9 @@ function will return the AR or MA polynomial roots of the fitted model:
 
 ``` r
 ARMApolyroots(arma2, type = 'AR')
-#> [1] -1.650168-1.614921e-19i  2.930118+1.614921e-19i
-```
-
-``` r
+#> [1]  1.206083+0i 53.027263+0i
 ARMApolyroots(arma2, type = 'MA')
-#> [1] 1.377623-1.272568e-19i 1.764791+1.272568e-19i
+#> [1] 1.171588+0.4407366i 1.171588-0.4407366i
 ```
 
 We have also implemented a `plot.Arima2` function that uses the
@@ -129,17 +119,19 @@ ARMA$(p, d, q)$, with $p \leq P$, $q \leq Q$, and $d = D$:
 ``` r
 set.seed(443252)
 tab_results <- aicTable(x, P = 4, Q = 4, D = 0) 
+#> Warning in arima(data, order = c(p, D, q), ...): possible convergence problem:
+#> optim gave code = 1
 
 tab_results |> knitr::kable()
 ```
 
 |     |      MA0 |      MA1 |      MA2 |      MA3 |      MA4 |
 |:----|---------:|---------:|---------:|---------:|---------:|
-| AR0 | 444.5480 | 336.8500 | 299.8703 | 293.5721 | 294.2935 |
-| AR1 | 335.4423 | 288.7580 | 290.0879 | 290.6879 | 292.6741 |
-| AR2 | 318.3194 | 290.3848 | 291.7480 | 292.6826 | 284.1858 |
-| AR3 | 298.9700 | 289.9248 | 291.7193 | 292.4092 | 291.0743 |
-| AR4 | 295.1323 | 291.5070 | 292.0390 | 287.9624 | 289.9623 |
+| AR0 | 278.5279 | 251.2556 | 251.1541 | 252.7329 | 247.8627 |
+| AR1 | 252.4657 | 251.2814 | 252.9809 | 250.2045 | 249.8406 |
+| AR2 | 252.6433 | 251.2406 | 250.2017 | 248.8202 | 251.2532 |
+| AR3 | 251.2595 | 253.2591 | 251.3298 | 251.2500 | 244.6877 |
+| AR4 | 253.2583 | 248.2554 | 249.8175 | 250.8627 | 248.6465 |
 
 ``` r
 
@@ -147,7 +139,7 @@ P <- which(tab_results == min(tab_results), arr.ind = TRUE)[1] - 1
 Q <- which(tab_results == min(tab_results), arr.ind = TRUE)[2] - 1
 
 print(paste0("p = ", P, "; q = ", Q))
-#> [1] "p = 2; q = 4"
+#> [1] "p = 3; q = 4"
 ```
 
 For more details about this package, please see our arXiv paper:
