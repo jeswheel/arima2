@@ -11,5 +11,9 @@
 #'   \item{Date}{`Date` column that records when the observation was made.}
 #'   \item{Average}{`numeric` column representing the average depth in feet.}
 #' }
-#' @source <https://www.glerl.noaa.gov/data/dashboard/data/levels/mGauge/miHuronMog.csv>
+#' @source
+#' NOAA. Annual January levels of lake Michigan-Huron. Great Lakes Environmental Research Laboratory, https://www.glerl.noaa.gov/data/dashboard/data/levels/mGauge/miHuronMog.csv. Accessed 08/24/2023.
+#'
+#' The original url used to obtain the data no longer exists, but a partial subset of the same data can be found at <https://www.greatlakescc.org/en/coordinating-committee-products-and-datasets/> under the subsection: Monthly Mean Water Levels.
+#'
 "miHuron_level"

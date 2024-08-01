@@ -55,6 +55,9 @@ library(arima2)
 #> The following object is masked from 'package:stats':
 #> 
 #>     arima
+```
+
+``` r
 
 set.seed(83131)  
 
@@ -77,9 +80,9 @@ arma <- stats::arima(x, order = c(2, 0, 2))
 ```
 
 In the example above, the resulting log-likelihood of the `stats::arima`
-function is -142.24, and the log-likelihood of the `arima` function is
--139.91. For this particular model and dataset, the random restart
-algorithm implemented in `arima2` improved the model likelihood by 2.33
+function is -139.87, and the log-likelihood of the `arima` function is
+-139.87. For this particular model and dataset, the random restart
+algorithm implemented in `arima2` improved the model likelihood by 0
 log-likelihood units.
 
 Our package creates a new `S3` object that we call `Arima2`, which
@@ -90,9 +93,12 @@ function will return the AR or MA polynomial roots of the fitted model:
 
 ``` r
 ARMApolyroots(arma2, type = 'AR')
-#> [1]  -4.464118+0i -15.209006+0i
+#> [1] -1.650168-1.614921e-19i  2.930118+1.614921e-19i
+```
+
+``` r
 ARMApolyroots(arma2, type = 'MA')
-#> [1] -0.9870024+0.665084i -0.9870024-0.665084i
+#> [1] 1.377623-1.272568e-19i 1.764791+1.272568e-19i
 ```
 
 We have also implemented a `plot.Arima2` function that uses the
@@ -129,11 +135,11 @@ tab_results |> knitr::kable()
 
 |     |      MA0 |      MA1 |      MA2 |      MA3 |      MA4 |
 |:----|---------:|---------:|---------:|---------:|---------:|
-| AR0 | 368.7800 | 302.8397 | 290.2196 | 290.1671 | 291.4220 |
-| AR1 | 319.4248 | 295.5320 | 289.8299 | 291.6313 | 292.9708 |
-| AR2 | 303.4653 | 295.7739 | 291.8176 | 291.5108 | 293.0426 |
-| AR3 | 296.6288 | 296.2828 | 292.9434 | 292.9987 | 293.5101 |
-| AR4 | 295.1954 | 297.1895 | 294.9198 | 294.3391 | 294.9258 |
+| AR0 | 444.5480 | 336.8500 | 299.8703 | 293.5721 | 294.2935 |
+| AR1 | 335.4423 | 288.7580 | 290.0879 | 290.6879 | 292.6741 |
+| AR2 | 318.3194 | 290.3848 | 291.7480 | 292.6826 | 284.1858 |
+| AR3 | 298.9700 | 289.9248 | 291.7193 | 292.4092 | 291.0743 |
+| AR4 | 295.1323 | 291.5070 | 292.0390 | 287.9624 | 289.9623 |
 
 ``` r
 
@@ -141,7 +147,7 @@ P <- which(tab_results == min(tab_results), arr.ind = TRUE)[1] - 1
 Q <- which(tab_results == min(tab_results), arr.ind = TRUE)[2] - 1
 
 print(paste0("p = ", P, "; q = ", Q))
-#> [1] "p = 1; q = 2"
+#> [1] "p = 2; q = 4"
 ```
 
 For more details about this package, please see our arXiv paper:
