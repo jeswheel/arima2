@@ -14,6 +14,7 @@
 #' \eqn{\theta_1, \ldots, \theta_p} are the \eqn{q} MA coefficients of the ARMA
 #' model.
 #'
+#' TODO: Update documentation. Durbin-Levinson doesn't require root sampling.
 #' ARMA coefficients are sampled by sampling inverse roots to be inside the
 #' complex unit circle, and then calculating the resulting polynomial.
 #' To ensure that the resulting polynomial coefficients are real, we only sample
@@ -40,8 +41,15 @@
 #'    `min_inv_root_dist`. Inverted roots that are near each other leads to
 #'    canceling or nearly canceling roots, effectively reducing the size of the
 #'    ARMA model.
+#' @param method  Method used to randomly sample parameter initializations.
+#'    \code{init_method = "DL"} will sample parameters using the Durbin-Levinson
+#'    algorithm, described by Monahan (1984). If
+#'    \code{init_method = "UnifRoots"}, then inverted roots of AR and MA
+#'    polynomials will be sampled uniformly from the complex unit circle.
 #'
 #' @returns a vector of randomly sampled ARMA coefficients.
+#'
+#' @references Monahan, John F. (1984) A note on enforcing stationarity in autoregressive-moving average models. \emph{Biometrika}, \bold{71}(2), 403--404.
 #'
 #' @export
 #' @examples {
@@ -55,9 +63,15 @@ sample_ARMA_coef <- function(
     order = c(0L, 0L),
     seasonal = list(order = c(0L, 0L), period = NA),
     n = 1,
-    Mod_bounds = c(0.05, 0.95),
-    min_inv_root_dist = 0.0
+    Mod_bounds = c(0, 1),
+    min_inv_root_dist = 0.0,
+    method = c("UnifRoots", "DL")
 ) {
+
+  # TODO: The Durbin-Levinson sampling does not require sampling inverted roots.
+  # A straight forward way of implementing this would avoid be an internal
+  # function that does this type of sampling directly. The trick is that it
+  # would be most convinient to relly on the inter
 
   if (!inherits(Mod_bounds, "numeric")) {
     stop("Argument 'Mod_bounds' must be a numeric vector of length 2.")
@@ -69,6 +83,13 @@ sample_ARMA_coef <- function(
     stop("First component of Mod_bounds must be greater than or equal to zero.")
   } else if (Mod_bounds[2] > 1) {
     stop("Second component of Mod_bounds must be less than or equal to one.")
+  }
+
+  method <- match.arg(method)
+
+  if (method == 'DL' && !all.equal(Mod_bounds, c(0, 1))) {
+    Mod_bounds <- c(0, 1)
+    warning("If sampling method DL is used, Mod_bounds are set to c(0, 1).")
   }
 
   if (inherits(seasonal, "list")) {
@@ -103,9 +124,9 @@ sample_ARMA_coef <- function(
   )
 
   if (n == 1L) {
-    res <- .sample_ARMA_coef(arma, Mod_bounds = Mod_bounds, min_inv_root_dist = min_inv_root_dist)
+    res <- .sample_ARMA_coef(arma, Mod_bounds = Mod_bounds, min_inv_root_dist = min_inv_root_dist, method = method)
   } else {
-    res <- t(replicate(n, .sample_ARMA_coef(arma, Mod_bounds = Mod_bounds, min_inv_root_dist = min_inv_root_dist)))
+    res <- t(replicate(n, .sample_ARMA_coef(arma, Mod_bounds = Mod_bounds, min_inv_root_dist = min_inv_root_dist, method = method)))
   }
 
   res
@@ -119,6 +140,11 @@ sample_ARMA_coef <- function(
 #' @param min_inv_root_dist minimum allowable distance between inverted AR and
 #'    MA polynomial roots, used to avoid models with parametric redundancies.
 #' @param Mod_bounds Bounds on the magnitude of the roots.
+#' @param method Type of sampling to be used. This mostly comes into play when
+#'   doing the min_inv_root_dist test. If method is UnifRoot, then roots are
+#'   sampled, checked, and then converted into coefficients. If method is
+#'   DL, then parameters are simulated, then the roots are
+#'   calculated and checked.
 #'
 #' This function does an internal check to make sure the resulting
 #' coefficients do not result in AR and MA roots that approximately
@@ -129,7 +155,7 @@ sample_ARMA_coef <- function(
 #' @noRd
 .sample_ARMA_coef <- function(arma, intercept,
                               min_inv_root_dist,
-                              Mod_bounds) {
+                              Mod_bounds, method) {
 
   # get number of coefficients
   ar <- arma[1L]
@@ -147,40 +173,94 @@ sample_ARMA_coef <- function(
   if (ar != 0 & ma != 0) {  # Both AR and MA need sampling, check for canceling root.
     min_dist <- 0
     while (min_dist <= min_inv_root_dist) {
-      ar_inv_roots <- .sample_inv_roots(n = ar, Mod_bounds = Mod_bounds)
-      ma_inv_roots <- .sample_inv_roots(n = ma, Mod_bounds = Mod_bounds)
-      min_dist <- min(Mod(outer(ar_inv_roots, ma_inv_roots, FUN = '-')))
+
+      if (method == 'DL') {
+        # Using this method, we first sample coefs, then roots and calculate distance
+        ar_coef <- .DLsample(n = ar, type = 'ar')
+        names(ar_coef) <- paste0("ar", 1:ar)
+        ma_coef <- .DLsample(n = ma, type = 'ma')
+        names(ma_coef) <- paste0("ma", 1:ma)
+        ar_inv_roots <- 1 / ARMApolyroots(ar_coef, type = 'AR')
+        ma_inv_roots <- 1 / ARMApolyroots(ma_coef, type = 'MA')
+        min_dist <- min(Mod(outer(ar_inv_roots, ma_inv_roots, FUN = '-')))
+      } else {
+        # Using other methods, we sample roots, calculate distance, then convert to coefs.
+        ar_inv_roots <- .sample_inv_roots(n = ar, Mod_bounds = Mod_bounds)
+        ma_inv_roots <- .sample_inv_roots(n = ma, Mod_bounds = Mod_bounds)
+        min_dist <- min(Mod(outer(ar_inv_roots, ma_inv_roots, FUN = '-')))
+      }
     }
-    ar_coef <- .roots2coef(ar_inv_roots, type = 'ar')
-    ma_coef <- .roots2coef(ma_inv_roots, type = 'ma')
+
+    if (method != 'DL') {  # Need to get coefs if not "DL" method.
+      ar_coef <- .roots2coef(ar_inv_roots, type = 'ar')
+      ma_coef <- .roots2coef(ma_inv_roots, type = 'ma')
+    }
 
     par_names <- c(par_names, paste0("ar", 1:arma[1L]))
     par_names <- c(par_names, paste0("ma", 1:arma[2L]))
   } else if (ar != 0) {
     par_names <- c(par_names, paste0("ar", 1:arma[1L]))
-    ar_coef <- .roots2coef(.sample_inv_roots(ar, Mod_bounds = Mod_bounds), type = 'ar')
+
+    if (method == "DL") {
+      ar_coef <- .DLsample(ar, type = 'ar')
+    } else {
+      ar_coef <- .roots2coef(.sample_inv_roots(ar, Mod_bounds = Mod_bounds), type = 'ar')
+    }
   } else if (ma != 0) {
     par_names <- c(par_names, paste0("ma", 1:arma[2L]))
-    ma_coef <- .roots2coef(.sample_inv_roots(ma, Mod_bounds = Mod_bounds), type = 'ma')
+
+    if (method == "DL") {
+      ma_coef <- .DLsample(ma, type = 'ma')
+    } else {
+      ma_coef <- .roots2coef(.sample_inv_roots(ma, Mod_bounds = Mod_bounds), type = 'ma')
+    }
   }
 
   if (ar_seas != 0 & ma_seas != 0) {  # Both AR and MA need sampling, check for canceling root.
     min_dist <- 0
     while (min_dist <= min_inv_root_dist) {
-      ar_inv_roots <- .sample_inv_roots(ar_seas, Mod_bounds = Mod_bounds)
-      ma_inv_roots <- .sample_inv_roots(ma_seas, Mod_bounds = Mod_bounds)
-      min_dist <- min(Mod(outer(ar_inv_roots, ma_inv_roots, FUN = '-')))
+
+      if (method == 'DL') {
+        ar_seas_coef <- .DLsample(n = ar_seas, type = 'ar')
+        names(ar_seas_coef) <- paste0("ar", 1:ar_seas)
+        ma_seas_coef <- .DLsample(n = ma_seas, type = 'ma')
+        names(ma_seas_coef) <- paste0("ma", 1:ma_seas)
+        ar_inv_roots <- 1 / ARMApolyroots(ar_seas_coef, type = 'AR')
+        ma_inv_roots <- 1 / ARMApolyroots(ma_seas_coef, type = 'MA')
+        min_dist <- min(Mod(outer(ar_inv_roots, ma_inv_roots, FUN = '-')))
+      } else {
+        # Resample everything. Condition is not often triggered, and no need to worry about ensuring complex conjugate pairs.
+        ar_inv_roots <- .sample_inv_roots(n = ar_seas, Mod_bounds = Mod_bounds)
+        ma_inv_roots <- .sample_inv_roots(n = ma_seas, Mod_bounds = Mod_bounds)
+        min_dist <- min(Mod(outer(ar_inv_roots, ma_inv_roots, FUN = '-')))
+      }
     }
-    ar_seas_coef <- .roots2coef(ar_inv_roots, type = 'ar')
-    ma_seas_coef <- .roots2coef(ma_inv_roots, type = 'ma')
+
+    if (method != 'DL') {  # Need to get coefs if not "DL" method.
+      ar_seas_coef <- .roots2coef(ar_inv_roots, type = 'ar')
+      ma_seas_coef <- .roots2coef(ma_inv_roots, type = 'ma')
+    }
 
     par_names <- c(par_names, paste0("ar_seas", 1:arma[3L]))
     par_names <- c(par_names, paste0("ma_seas", 1:arma[4L]))
   } else if (ar_seas != 0) {
-    ar_seas_coef <- .roots2coef(.sample_inv_roots(ar_seas, Mod_bounds = Mod_bounds), type = 'ar')
+
     par_names <- c(par_names, paste0("ar_seas", 1:arma[3L]))
+
+    if (method == "DL") {
+      ar_seas_coef <- .DLsample(ar_seas, type = 'ar')
+    } else {
+      ar_seas_coef <- .roots2coef(.sample_inv_roots(ar_seas, Mod_bounds = Mod_bounds), type = 'ar')
+    }
+
   } else if (ma_seas != 0) {
-    ma_seas_coef <- .roots2coef(.sample_inv_roots(ma_seas, Mod_bounds = Mod_bounds), type = 'ma')
+
+    if (method == "DL") {
+      ma_seas_coef <- .DLsample(ma_seas, type = 'ma')
+    } else {
+      ma_seas_coef <- .roots2coef(.sample_inv_roots(ma_seas, Mod_bounds = Mod_bounds), type = 'ma')
+    }
+
     par_names <- c(par_names, paste0("ma_seas", 1:arma[4L]))
   }
 
@@ -244,6 +324,9 @@ sample_ARMA_coef <- function(
 #' and values close to zero result in ARMA coefficients that are very similar
 #' and near zero, which defeats the purpose of the random restart algorithm.
 #'
+#' Edit: Jun 26, 2025. The new coefficient sampling algorithm (Durbin-Levinson)
+#' does not require sampling roots. Instead
+#'
 #' @param n number of roots to sample (equal to the number of coefficients)
 #' @param type string. If type == "beta", the radius is sampled with a beta
 #'    distribution. Otherwise, uniform sampling is used.
@@ -286,6 +369,28 @@ sample_ARMA_coef <- function(
   }
 
   inv_roots
+}
+
+#' Sample AR / MA coefficients using Durbin-Levinson
+#'
+#' @param n Number of coefficients to sample
+#' @param type Character vector, of type c('ar', 'ma')
+#' @param gamma bounds on the sampled PACF
+#' @param theta bounds on the sampled PACF
+#'
+#' @returns A vector of length n containing AR or MA coefficients, specified by
+#'    type
+#' @noRd
+#'
+#' @examples arima2:::.DLsample(3, type = 'ar')
+.DLsample <- function(n, type, gamma = 0.01, theta = 0.005) {
+  phi_kk <- numeric(n)
+  phi_kk[1] <- stats::runif(1, min = -1 + gamma, max = 1 - gamma)
+  if (n > 1) phi_kk[2:n] <- stats::runif(n-1, min = -1+gamma+theta, max = 1 - gamma - theta)
+
+  tmp <- .Call(C_ARIMA_transPars, atanh(phi_kk), as.integer(c(n, 0, 0, 0, 0, 0, 0)), TRUE)
+
+  if (type == 'ar') tmp[[1L]] else -tmp[[1L]]
 }
 
 #' AR Check

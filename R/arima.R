@@ -33,6 +33,11 @@
 #' @param eps_tol Tolerance for accepting a new solution to be better than a
 #'    previous solution in terms of log-likelihood. The default corresponds to a
 #'    one ten-thousandth unit increase in log-likelihood.
+#' @param init_method Method used to randomly sample parameter initializations.
+#'    \code{init_method = "DL"} will sample parameters using the Durbin-Levinson
+#'    algorithm, described by Monahan (1984). If
+#'    \code{init_method = "UnifRoots"}, then inverted roots of AR and MA
+#'    polynomials will be sampled uniformly from the complex unit circle.
 #' @inheritParams stats::arima
 #' @returns
 #' A list of class \code{c("Arima2", "Arima")}. This list contains all of the
@@ -66,6 +71,8 @@
 #'    loglikelihood of every parameter initialization.}
 #' }
 #'
+#' @references Monahan, John F. (1984) A note on enforcing stationarity in autoregressive-moving average models. \emph{Biometrika}, \bold{71}(2), 403--404.
+#'
 #' @export
 #' @examples
 #' # example code
@@ -77,7 +84,9 @@ arima <- function(x, order = c(0L, 0L, 0L),
                   seasonal = list(order = c(0L, 0L, 0L), period = NA),
                   xreg = NULL, include.mean = TRUE,
                   transform.pars = TRUE, fixed = NULL, init = NULL,
-                  method = c("CSS-ML", "ML", "CSS"), n.cond,
+                  method = c("CSS-ML", "ML", "CSS"),
+                  init_method = c("DL", "UnifRoots"),
+                  n.cond,
                   SSinit = c("Rossignol2011", "Gardner1980"),
                   optim.method = "BFGS",
                   optim.control = list(), kappa = 1e6,
@@ -483,14 +492,16 @@ arima <- function(x, order = c(0L, 0L, 0L),
                   arma = arma,
                   intercept = init[length(init)],
                   Mod_bounds = c(0.05, 0.95),
-                  min_inv_root_dist = 0.01
+                  min_inv_root_dist = 0.01,
+                  method = init_method
                 )[mask]
               } else {
                 new_init <- init
                 new_init[mask] <- .sample_ARMA_coef(
                   arma = arma,
                   Mod_bounds = c(0.05, 0.95),
-                  min_inv_root_dist = 0.01
+                  min_inv_root_dist = 0.01,
+                  method = init_method
                 )[mask]
               }
 

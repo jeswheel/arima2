@@ -8,8 +8,9 @@ sample_ARMA_coef(
   order = c(0L, 0L),
   seasonal = list(order = c(0L, 0L), period = NA),
   n = 1,
-  Mod_bounds = c(0.05, 0.95),
-  min_inv_root_dist = 0
+  Mod_bounds = c(0, 1),
+  min_inv_root_dist = 0,
+  method = c("UnifRoots", "DL")
 )
 }
 \arguments{
@@ -35,6 +36,12 @@ inverted roots in the AR and MA polynomials is greater than
 \code{min_inv_root_dist}. Inverted roots that are near each other leads to
 canceling or nearly canceling roots, effectively reducing the size of the
 ARMA model.}
+
+\item{method}{Method used to randomly sample parameter initializations.
+\code{init_method = "DL"} will sample parameters using the Durbin-Levinson
+algorithm, described by Monahan (1984). If
+\code{init_method = "UnifRoots"}, then inverted roots of AR and MA
+polynomials will be sampled uniformly from the complex unit circle.}
 }
 \value{
 a vector of randomly sampled ARMA coefficients.
@@ -55,6 +62,7 @@ where \eqn{z} is a complex number, \eqn{\phi_1, \ldots, \phi_p} are the
 \eqn{\theta_1, \ldots, \theta_p} are the \eqn{q} MA coefficients of the ARMA
 model.
 
+TODO: Update documentation. Durbin-Levinson doesn't require root sampling.
 ARMA coefficients are sampled by sampling inverse roots to be inside the
 complex unit circle, and then calculating the resulting polynomial.
 To ensure that the resulting polynomial coefficients are real, we only sample
@@ -71,4 +79,7 @@ sample_ARMA_coef(
    n = 100
 )
 }
+}
+\references{
+Monahan, John F. (1984) A note on enforcing stationarity in autoregressive-moving average models. \emph{Biometrika}, \bold{71}(2), 403--404.
 }

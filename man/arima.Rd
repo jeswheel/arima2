@@ -14,6 +14,7 @@ arima(
   fixed = NULL,
   init = NULL,
   method = c("CSS-ML", "ML", "CSS"),
+  init_method = c("DL", "UnifRoots"),
   n.cond,
   SSinit = c("Rossignol2011", "Gardner1980"),
   optim.method = "BFGS",
@@ -30,13 +31,13 @@ arima(
 \arguments{
 \item{x}{a univariate time series}
 
-\item{order}{A specification of the non-seasonal part of the ARIMA
+\item{order}{a specification of the non-seasonal part of the ARIMA
     model: the three integer components \eqn{(p, d, q)} are the AR order, the
     degree of differencing, and the MA order.}
 
-\item{seasonal}{A specification of the seasonal part of the ARIMA
+\item{seasonal}{a specification of the seasonal part of the ARIMA
     model, plus the period (which defaults to \code{frequency(x)}).
-    This may be a list with components \code{order} and
+    This may be a \code{\link{list}} with components \code{order} and
     \code{period}, or just a numeric vector of length 3 which
     specifies the seasonal \code{order}.  In the latter case the
     default period is used.}
@@ -44,7 +45,8 @@ arima(
 \item{xreg}{Optionally, a vector or matrix of external regressors,
     which must have the same number of rows as \code{x}.}
 
-\item{include.mean}{Should the ARMA model include a mean/intercept term?  The
+\item{include.mean}{logical indicating if the ARMA model should include a
+    mean/intercept term.  The
     default is \code{TRUE} for undifferenced series, and it is ignored
     for ARIMA models with differencing.}
 
@@ -89,6 +91,12 @@ arima(
     conditional sum-of-squares.  The default (unless there are missing
     values) is to use conditional-sum-of-squares to find starting
     values, then maximum likelihood.  Can be abbreviated.}
+
+\item{init_method}{Method used to randomly sample parameter initializations.
+\code{init_method = "DL"} will sample parameters using the Durbin-Levinson
+algorithm, described by Monahan (1984). If
+\code{init_method = "UnifRoots"}, then inverted roots of AR and MA
+polynomials will be sampled uniformly from the complex unit circle.}
 
 \item{n.cond}{only used if fitting by conditional-sum-of-squares: the
     number of initial observations to ignore.  It will be ignored if
@@ -184,4 +192,7 @@ model parameters via a random restart algorithm.
 set.seed(12345)
 arima(miHuron_level$Average, order = c(2, 0, 1), max_iters = 100)
 
+}
+\references{
+Monahan, John F. (1984) A note on enforcing stationarity in autoregressive-moving average models. \emph{Biometrika}, \bold{71}(2), 403--404.
 }
