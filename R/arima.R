@@ -126,6 +126,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
   "%+%" <- function(a, b) .Call(C_TSconv, a, b)
 
   SSinit <- match.arg(SSinit)
+  init_method <- match.arg(init_method)
   SS.G <- SSinit == "Gardner1980"
   ## helper of armafn(), called by optim()
   upARIMA <- function(mod, phi, theta) {
