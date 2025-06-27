@@ -62,14 +62,15 @@ where \eqn{z} is a complex number, \eqn{\phi_1, \ldots, \phi_p} are the
 \eqn{\theta_1, \ldots, \theta_p} are the \eqn{q} MA coefficients of the ARMA
 model.
 
-TODO: Update documentation. Durbin-Levinson doesn't require root sampling.
-ARMA coefficients are sampled by sampling inverse roots to be inside the
-complex unit circle, and then calculating the resulting polynomial.
-To ensure that the resulting polynomial coefficients are real, we only sample
-half of the needed number of complex roots, and set the remaining half to be
-the complex conjugate of the sampled points. In the case where the number of
-coefficients is odd, the remaining root is sampled uniformly, satisfying the
-Mod_bounds parameter.
+This function implements two distinct sampling schemes.
+\code{init_method = "DL"} will sample parameters using the Durbin-Levinson
+algorithm, described by Monahan (1984). If \code{init_method = "UnifRoots"},
+then inverted roots of AR and MA polynomials will be sampled uniformly from
+the complex unit circle. In the later method, to ensure that the resulting
+polynomial coefficients are real, we only sample half of the needed number
+of complex roots, and set the remaining half to be the complex conjugate of
+the sampled points. In the case where the number of coefficients is odd, the
+remaining root is sampled uniformly, satisfying the \code{Mod_bounds} parameter.
 }
 \examples{
 {

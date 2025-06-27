@@ -1,5 +1,9 @@
 # arima2 (development version)
 
+# arima2 3.4.0
+
+* Added Durbin-Levinson sampling scheme for randomly sampling ARMA coefficients. The algorithm is implement in the internal function `.DLsample`, which calls the C function `ARIMA_transPars`. The new sampling scheme can be used externally with the function `sample_ARMA_coef` by setting `method = "DL"`, or internally as part of the multi-start algorithm by setting `init_method = "DL"` in the `arima` function.
+
 # arima2 3.3.0
 
 * Updated root sampling scheme. Previously, if $n$ roots were sampled, floor($n/2$) roots were sampled as conjugate pairs, and if $n$ is even the remaining root was sampled as a real number. This scheme did not allow the ability to sample any real roots (other than the final odd root), leading to the inability of sampling positive evenly numbered AR components. 

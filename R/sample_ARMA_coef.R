@@ -14,14 +14,15 @@
 #' \eqn{\theta_1, \ldots, \theta_p} are the \eqn{q} MA coefficients of the ARMA
 #' model.
 #'
-#' TODO: Update documentation. Durbin-Levinson doesn't require root sampling.
-#' ARMA coefficients are sampled by sampling inverse roots to be inside the
-#' complex unit circle, and then calculating the resulting polynomial.
-#' To ensure that the resulting polynomial coefficients are real, we only sample
-#' half of the needed number of complex roots, and set the remaining half to be
-#' the complex conjugate of the sampled points. In the case where the number of
-#' coefficients is odd, the remaining root is sampled uniformly, satisfying the
-#' Mod_bounds parameter.
+#' This function implements two distinct sampling schemes.
+#' \code{init_method = "DL"} will sample parameters using the Durbin-Levinson
+#' algorithm, described by Monahan (1984). If \code{init_method = "UnifRoots"},
+#' then inverted roots of AR and MA polynomials will be sampled uniformly from
+#' the complex unit circle. In the later method, to ensure that the resulting
+#' polynomial coefficients are real, we only sample half of the needed number
+#' of complex roots, and set the remaining half to be the complex conjugate of
+#' the sampled points. In the case where the number of coefficients is odd, the
+#' remaining root is sampled uniformly, satisfying the `Mod_bounds` parameter.
 #'
 #' @param order A specification of the non-seasonal part of the ARIMA model:
 #'    this is different than the `order` input of [stats::arima()], because
@@ -67,11 +68,6 @@ sample_ARMA_coef <- function(
     min_inv_root_dist = 0.0,
     method = c("UnifRoots", "DL")
 ) {
-
-  # TODO: The Durbin-Levinson sampling does not require sampling inverted roots.
-  # A straight forward way of implementing this would avoid be an internal
-  # function that does this type of sampling directly. The trick is that it
-  # would be most convinient to relly on the inter
 
   if (!inherits(Mod_bounds, "numeric")) {
     stop("Argument 'Mod_bounds' must be a numeric vector of length 2.")
