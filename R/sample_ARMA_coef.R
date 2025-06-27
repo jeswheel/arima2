@@ -87,7 +87,7 @@ sample_ARMA_coef <- function(
 
   method <- match.arg(method)
 
-  if (method == 'DL' && !all.equal(Mod_bounds, c(0, 1))) {
+  if (method == 'DL' && !all(Mod_bounds == c(0, 1))) {
     Mod_bounds <- c(0, 1)
     warning("If sampling method DL is used, Mod_bounds are set to c(0, 1).")
   }
