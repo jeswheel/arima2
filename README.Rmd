@@ -51,24 +51,20 @@ This is a basic example which shows you how to solve a common problem:
 ```{r example}
 library(arima2)
 
-set.seed(83131)  
+set.seed(851348)
 
-# Get model coefficients from ARMA(2, 2)
-coefs <- sample_ARMA_coef(order = c(2, 2))
+coefs <- c("ar1" = -0.3, "ar2" = -0.3, 'ma1' = -0.2, 'ma2' = 0.1)
+intercept <- 20
 
-# Get model intercept 
-intercept <- rnorm(1, sd = 50)
-
-# Generate data from ARMA model 
+# Generate data from ARMA model
 x <- intercept + arima.sim(
-  n = 100, 
-  model = list(ar = coefs[grepl("^ar[[:digit:]]+", names(coefs))], 
+  n = 100,
+  model = list(ar = coefs[grepl("^ar[[:digit:]]+", names(coefs))],
                ma = coefs[grepl("^ma[[:digit:]]+", names(coefs))])
 )
 
-# Fit ARMA model using arima2 and stats::arima 
-arma2 <- arima(x, order = c(2, 0, 2), max_iters = 20)
-arma <- stats::arima(x, order = c(2, 0, 2))
+arma <- stats::arima(x, order = c(2, 0, 2), SSinit = "Rossignol2011")
+arma2 <- arima2::arima(x, order = c(2, 0, 2), SSinit = "Rossignol2011")
 ```
 
 In the example above, the resulting log-likelihood of the `stats::arima` function is `r round(arma$loglik, 2)`, and the log-likelihood of the `arima` function is `r round(arma2$loglik, 2)`.

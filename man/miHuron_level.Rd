@@ -15,7 +15,9 @@ A data frame with 155 observations and two columns:
 }
 }
 \source{
-\url{https://www.glerl.noaa.gov/data/dashboard/data/levels/mGauge/miHuronMog.csv}
+NOAA. Annual January levels of lake Michigan-Huron. Great Lakes Environmental Research Laboratory, https://www.glerl.noaa.gov/data/dashboard/data/levels/mGauge/miHuronMog.csv. Accessed 08/24/2023.
+
+The original url used to obtain the data no longer exists, but a partial subset of the same data can be found at \url{https://www.greatlakescc.org/en/coordinating-committee-products-and-datasets/} under the subsection: Monthly Mean Water Levels.
 }
 \usage{
 miHuron_level
