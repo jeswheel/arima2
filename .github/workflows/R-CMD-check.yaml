@@ -51,7 +51,3 @@ jobs:
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
-    	env:
-      	  # Ensure the compiler can find gettext
-      	  LDFLAGS: -L/opt/homebrew/opt/gettext/lib
-      	  CPPFLAGS: -I/opt/homebrew/opt/gettext/include
