@@ -47,6 +47,6 @@ Imports:
     ggplot2,
     methods
 Depends: 
-    R (>= 3.5)
+    R (>= 4.1.0)
 LazyData: true
 BugReports: https://github.com/jeswheel/arima2/issues/
