@@ -86,9 +86,9 @@ function will return the AR or MA polynomial roots of the fitted model:
 
 ``` r
 ARMApolyroots(arma2, type = 'AR')
-#> [1]  1.206083+0i 53.027263+0i
+#> [1]  1.206337+2.524355e-29i 52.741787-2.524355e-29i
 ARMApolyroots(arma2, type = 'MA')
-#> [1] 1.171588+0.4407366i 1.171588-0.4407366i
+#> [1] 1.171567+0.4408999i 1.171567-0.4408999i
 ```
 
 We have also implemented a `plot.Arima2` function that uses the
@@ -128,9 +128,9 @@ tab_results |> knitr::kable()
 |     |      MA0 |      MA1 |      MA2 |      MA3 |      MA4 |
 |:----|---------:|---------:|---------:|---------:|---------:|
 | AR0 | 278.5279 | 251.2556 | 251.1541 | 252.7329 | 247.8627 |
-| AR1 | 252.4657 | 251.2814 | 252.9809 | 250.2045 | 249.8406 |
-| AR2 | 252.6433 | 251.2406 | 250.2017 | 248.8202 | 251.2532 |
-| AR3 | 251.2595 | 253.2591 | 251.3298 | 251.2500 | 244.6877 |
+| AR1 | 252.4657 | 251.2814 | 248.2125 | 250.2045 | 249.8406 |
+| AR2 | 252.6433 | 251.2406 | 250.2017 | 242.1825 | 251.6792 |
+| AR3 | 251.2595 | 253.2591 | 251.3298 | 251.2216 | 242.7132 |
 | AR4 | 253.2583 | 248.2554 | 249.8175 | 250.8627 | 248.6465 |
 
 ``` r
@@ -139,7 +139,7 @@ P <- which(tab_results == min(tab_results), arr.ind = TRUE)[1] - 1
 Q <- which(tab_results == min(tab_results), arr.ind = TRUE)[2] - 1
 
 print(paste0("p = ", P, "; q = ", Q))
-#> [1] "p = 3; q = 4"
+#> [1] "p = 2; q = 3"
 ```
 
 For more details about this package, please see our arXiv paper:
