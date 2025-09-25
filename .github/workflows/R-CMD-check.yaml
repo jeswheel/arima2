@@ -45,22 +45,7 @@ jobs:
           extra-packages: any::rcmdcheck
           needs: check
 
-      - name: Install gettext and pkg-config
-        if: runner.os == 'macOS'
-        run: brew install gettext pkg-config
-
-      - name: Set env for R build to find gettext
-        if: runner.os == 'macOS'
-        run: |
-          echo "PKG_CONFIG_PATH=$(brew --prefix gettext)/lib/pkgconfig" >> $GITHUB_ENV
-          echo "CPPFLAGS=-I$(brew --prefix gettext)/include" >> $GITHUB_ENV
-          echo "LDFLAGS=-L$(brew --prefix gettext)/lib" >> $GITHUB_ENV
-
-      - name: Show env for debugging
-        if: runner.os == 'macOS'
-        run: env | grep -E 'PKG_CONFIG_PATH|CPPFLAGS|LDFLAGS'
-
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
-          build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
+          build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf", "--with-gettext-prefix=/opt/homebrew/opt/gettext")'
