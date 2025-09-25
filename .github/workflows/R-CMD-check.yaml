@@ -45,10 +45,11 @@ jobs:
           extra-packages: any::rcmdcheck
           needs: check
 
-      # Install gettext only on macOS
-      - name: Install gettext (macOS)
+      - name: Set up build env for gettext (macOS)
         if: runner.os == 'macOS'
-        run: brew install gettext
+        run: |
+          echo "CPPFLAGS=\"-I$(brew --prefix gettext)/include\"" >> $GITHUB_ENV
+          echo "LDFLAGS=\"-L$(brew --prefix gettext)/lib\"" >> $GITHUB_ENV
 
       - uses: r-lib/actions/check-r-package@v2
         with:
