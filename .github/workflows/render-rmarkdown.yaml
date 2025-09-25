@@ -27,6 +27,10 @@ jobs:
         with:
           r-version: renv
 
+      # Install libcurl4-openssl-dev
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev
+
       - uses: r-lib/actions/setup-renv@v2
 
       - name: Render Rmarkdown files and Commit Results
