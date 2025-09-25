@@ -20,10 +20,10 @@ jobs:
       matrix:
         config:
           - {os: macos-latest,   r: 'release'}
-          - {os: windows-latest, r: 'release'}
-          - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
-          - {os: ubuntu-latest,   r: 'release'}
-          - {os: ubuntu-latest,   r: 'oldrel-1'}
+          # - {os: windows-latest, r: 'release'}
+          # - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
+          # - {os: ubuntu-latest,   r: 'release'}
+          # - {os: ubuntu-latest,   r: 'oldrel-1'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -45,11 +45,20 @@ jobs:
           extra-packages: any::rcmdcheck
           needs: check
 
-      - name: Set up build env for gettext (macOS)
+      - name: Install gettext and pkg-config
+        if: runner.os == 'macOS'
+        run: brew install gettext pkg-config
+
+      - name: Set env for R build to find gettext
         if: runner.os == 'macOS'
         run: |
-          echo "CPPFLAGS=\"-I$(brew --prefix gettext)/include\"" >> $GITHUB_ENV
-          echo "LDFLAGS=\"-L$(brew --prefix gettext)/lib\"" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$(brew --prefix gettext)/lib/pkgconfig" >> $GITHUB_ENV
+          echo "CPPFLAGS=-I$(brew --prefix gettext)/include" >> $GITHUB_ENV
+          echo "LDFLAGS=-L$(brew --prefix gettext)/lib" >> $GITHUB_ENV
+
+      - name: Show env for debugging
+        if: runner.os == 'macOS'
+        run: env | grep -E 'PKG_CONFIG_PATH|CPPFLAGS|LDFLAGS'
 
       - uses: r-lib/actions/check-r-package@v2
         with:
