@@ -143,6 +143,9 @@ print(paste0("p = ", P, "; q = ", Q))
 #> [1] "p = 2; q = 3"
 ```
 
-For more details about this package, please see our arXiv paper:
-[arXiv:2310.01198](https://doi.org/10.48550/arXiv.2310.01198), which has
-been accepted for publication at PLOS ONE.
+For more details about this package, please see our published article:
+
+Wheeler J, Ionides EL (2025). “Revisiting inference for ARMA models:
+Improved fits and superior confidence intervals.” *PLOS ONE*, *20*(10),
+1-19.
+[10.1371/journal.pcbi.1012032](https://doi.org/10.1371/journal.pcbi.1012032).

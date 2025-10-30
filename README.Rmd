@@ -105,4 +105,24 @@ Q <- which(tab_results == min(tab_results), arr.ind = TRUE)[2] - 1
 print(paste0("p = ", P, "; q = ", Q))
 ```
 
-For more details about this package, please see our arXiv paper: [arXiv:2310.01198](https://doi.org/10.48550/arXiv.2310.01198), which has been accepted for publication at PLOS ONE.
+For more details about this package, please see our published article:
+
+\setlength{\parindent}{-0.2in}
+\setlength{\leftskip}{0.2in}
+\setlength{\parskip}{8pt}
+\noindent
+
+```{r echo=FALSE, results='asis'}
+bibentry(
+  bibtype = "Article",
+  title = "Revisiting inference for ARMA models: Improved fits and superior confidence intervals",
+  author = "Jesse Wheeler, Edward L. Ionides",
+  journal = "PLOS ONE",
+  year = 2025,
+  volume = 20,
+  number = 10,
+  pages = "1-19",
+  note = "[10.1371/journal.pcbi.1012032](https://doi.org/10.1371/journal.pcbi.1012032)"
+  # doi = "10.1371/journal.pcbi.1012032",
+)
+```

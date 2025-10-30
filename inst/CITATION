@@ -1,0 +1,25 @@
+year <- sub("-.*", "", meta$Date)
+note1 <- sprintf("{R}~package, version~%s", meta$Version)
+note2 <- sprintf("(R package, version %s)", meta$Version)
+
+c(
+  bibentry(
+    bibtype = "Article",
+    title = "Revisiting inference for ARMA models: Improved fits and superior confidence intervals",
+    author = "Jesse Wheeler, Edward L. Ionides",
+    journal = "PLOS ONE",
+    year = 2025,
+    volume = 20,
+    number = 10,
+    pages = "1-19",
+    doi = "10.1371/journal.pcbi.1012032"
+  ),
+  bibentry(
+    bibtype = "Manual",
+    year = year,
+    title = {"arima2: Likelihood Based Inference for ARIMA Modeling"},
+    author = "Jesse Wheeler, Noel McAllister, Dhajanae Sylvertooth",
+    note = {paste0("R package version ", note1, ".")},
+    doi = "10.32614/CRAN.package.arima2"
+  )
+)

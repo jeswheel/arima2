@@ -1,12 +1,13 @@
 Package: arima2
 Title: Likelihood Based Inference for ARIMA Modeling
-Version: 3.4.1.9000
+Version: 3.4.2
+Date: 2025-10-30
 Authors@R: 
     c(
     person("Jesse", 
            "Wheeler", 
            role = c("aut", "cre", "cph"),
-           email = "jeswheel@umich.edu"),
+           email = "jessewheeler@isu.edu"),
     person("Noel", 
            "McAllister", 
            role = "aut",
@@ -35,7 +36,7 @@ Description: Estimating and analyzing auto regressive integrated moving average
     necessary condition for performing likelihood ratio tests. This package 
     relies heavily on the source code of the arima() function of the 'stats' 
     package. For more information, please see Jesse Wheeler and Edward L. 
-    Ionides (2023) <doi:10.48550/arXiv.2310.01198>.
+    Ionides (2025) <doi:10.1371/journal.pcbi.1012032>.
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

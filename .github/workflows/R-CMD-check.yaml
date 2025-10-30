@@ -2,8 +2,10 @@
 # Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
 on:
   push:
-    branches: [main, master]
+    branches:
+      - '**'
   pull_request:
+  workflow_dispatch:
 
 name: R-CMD-check.yaml
 
@@ -19,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          # - {os: macos-latest,   r: 'release'}
+          - {os: macos-latest,   r: 'release'}
           - {os: windows-latest, r: 'release'}
           - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
           - {os: ubuntu-latest,   r: 'release'}
@@ -39,6 +41,25 @@ jobs:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
+
+      # ------ macOS-specific steps BEGIN ------
+      - name: Install gettext (macOS only)
+        if: runner.os == 'macOS'
+        run: brew install gettext
+
+      - name: Set Makevars for gettext (macOS only)
+        if: runner.os == 'macOS'
+        run: |
+          BREW_PREFIX=$(brew --prefix gettext)
+          echo "Homebrew gettext prefix: $BREW_PREFIX"
+          echo "Contents of $BREW_PREFIX/include:"
+          ls -l "$BREW_PREFIX/include"
+          echo "Contents of $BREW_PREFIX/lib:"
+          ls -l "$BREW_PREFIX/lib"
+          mkdir -p ~/.R
+          echo "CPPFLAGS += -I${BREW_PREFIX}/include" >> ~/.R/Makevars
+          echo "LDFLAGS += -L${BREW_PREFIX}/lib" >> ~/.R/Makevars
+      # ------ macOS-specific steps END ------
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
