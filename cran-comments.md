@@ -1,7 +1,12 @@
 ## R CMD check results
 
-0 errors | 0 warnings | 0 notes
+0 errors | 0 warnings | 1 notes
 
+* Maintainer: Jesse Wheeler <jessewheeler@isu.edu>
+  - New maintainer: Jesse Wheeler <jessewheeler@isu.edu>
+  - Old maintainer(s): Jesse Wheeler <jeswheel@umich.edu>
+
+The maintainer email address has been updated to new institutional email address.
 
 ## revdepcheck results
 
