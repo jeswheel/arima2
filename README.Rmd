@@ -18,7 +18,8 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/jeswheel/arima2/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/jeswheel/arima2/actions/workflows/R-CMD-check.yaml)
 [![CRAN status](https://www.r-pkg.org/badges/version/arima2)](https://CRAN.R-project.org/package=arima2)
-[![DOI](https://zenodo.org/badge/564488394.svg)](https://doi.org/10.5281/zenodo.17203987)
+[![Research Article](https://img.shields.io/badge/Research%20Article-PDF-blue)](https://doi.org/10.1371/journal.pone.0333993)
+<!-- [![DOI](https://zenodo.org/badge/564488394.svg)](https://doi.org/10.5281/zenodo.17203987) -->
 <!-- badges: end -->
 
 The goal of `arima2` is to provide a set of tools to aid in the analysis of time series data in `R`. 
@@ -122,7 +123,7 @@ bibentry(
   volume = 20,
   number = 10,
   pages = "1-19",
-  note = "[10.1371/journal.pcbi.1012032](https://doi.org/10.1371/journal.pcbi.1012032)"
+  note = "[10.1371/journal.pone.0333993](https://doi.org/10.1371/journal.pone.0333993)"
   # doi = "10.1371/journal.pcbi.1012032",
 )
 ```

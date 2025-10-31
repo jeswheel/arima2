@@ -8,7 +8,9 @@
 [![R-CMD-check](https://github.com/jeswheel/arima2/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/jeswheel/arima2/actions/workflows/R-CMD-check.yaml)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/arima2)](https://CRAN.R-project.org/package=arima2)
-[![DOI](https://zenodo.org/badge/564488394.svg)](https://doi.org/10.5281/zenodo.17203987)
+[![Research
+Article](https://img.shields.io/badge/Research%20Article-PDF-blue)](https://doi.org/10.1371/journal.pone.0333993)
+<!-- [![DOI](https://zenodo.org/badge/564488394.svg)](https://doi.org/10.5281/zenodo.17203987) -->
 <!-- badges: end -->
 
 The goal of `arima2` is to provide a set of tools to aid in the analysis
@@ -148,4 +150,4 @@ For more details about this package, please see our published article:
 Wheeler J, Ionides EL (2025). “Revisiting inference for ARMA models:
 Improved fits and superior confidence intervals.” *PLOS ONE*, *20*(10),
 1-19.
-[10.1371/journal.pcbi.1012032](https://doi.org/10.1371/journal.pcbi.1012032).
+[10.1371/journal.pone.0333993](https://doi.org/10.1371/journal.pone.0333993).
