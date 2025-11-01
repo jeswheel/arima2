@@ -1,6 +1,6 @@
 Package: arima2
 Title: Likelihood Based Inference for ARIMA Modeling
-Version: 3.4.2
+Version: 3.4.2.9000
 Date: 2025-10-30
 Authors@R: 
     c(
