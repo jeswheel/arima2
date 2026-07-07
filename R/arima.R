@@ -160,8 +160,26 @@ arima <- function(x, order = c(0L, 0L, 0L),
     if(ncxreg > 0) x <- x - xreg %*% par[narma + (1L:ncxreg)]
     ## next call changes Z components a, P, Pn so beware!
     res <- .Call(C_ARIMA_Like, x, Z, 0L, FALSE, diffuseControl)
-    s2 <- res[1L]/res[3L]
-    0.5*(log(s2) + res[2L]/res[3L])
+    # s2 <- res[1L]/res[3L]
+    # 0.5*(log(s2) + res[2L]/res[3L])
+
+    # Extract the components from the modified C-code output
+    S_YY <- res[1L]      # Sum of squares of the data
+    log_det <- res[2L]   # Log-determinant of the covariance matrix
+    n <- res[3L]         # Number of valid observations
+    S_11 <- res[4L]      # The intercept penalty sum of squares
+    S_Y1 <- res[5L]      # Cross-product
+
+    S_Y <- S_YY - (S_Y1^2 / S_11)
+
+    # This is already profiling out \sigma^2:
+    s2_reml <- S_Y / (n - 1)
+
+    constants <- 0.5 * (n - 1) * log(2 * pi) + 0.5 * (n - 1)
+
+    # 2. Exact Restricted Negative Log-Likelihood
+    0.5 * (n - 1) * log(s2_reml) + 0.5 * log_det + 0.5 * log(S_11) + constants
+    # 0.5 * (n - 1) * log(s2_reml) + 0.5 * log_det + 0.5 * log(S_1)
   }
 
   armaCSS <- function(p) {
@@ -353,6 +371,12 @@ arima <- function(x, order = c(0L, 0L, 0L),
   if(!("parscale" %in% names(optim.control)))
     optim.control$parscale <- parscale[mask]
 
+  # TODO: HERE: sets up latent process.
+  trarma <- .Call(C_ARIMA_transPars, coef, arma, transform.pars)
+  mod <- stats::makeARIMA(trarma[[1L]], trarma[[2L]], Delta, kappa, SSinit)
+
+  return(armafn(coef, FALSE))
+
   if(method == "CSS") {
     i_start = NULL
     res <- if(no.optim)
@@ -378,6 +402,16 @@ arima <- function(x, order = c(0L, 0L, 0L),
     all_values <- value
   } else {
     if (method == "CSS-ML") {
+
+      if(no.optim) {
+        return(
+          list(
+            convergence = 0, par = coef,
+            value = armafn(coef, FALSE)
+          )
+        )
+      }
+
       res <- if(no.optim)
         list(convergence=0L, par=numeric(), value=armaCSS(numeric()))
       else

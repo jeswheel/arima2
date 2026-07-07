@@ -6,3 +6,4 @@
 R/roots2poly.R
 .Rprofile
 renv/*
+.positai

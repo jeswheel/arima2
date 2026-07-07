@@ -629,6 +629,18 @@ ARIMA_Like(SEXP sy, SEXP mod, SEXP sUP, SEXP giveResid, SEXP usePrior)
 
   anew = (double *) R_alloc(rd, sizeof(double));
   M = (double *) R_alloc(rd, sizeof(double));
+
+  // --- NEW: Intercept Penalty Variables ---
+  double ssq_11 = 0.0, ssq_Y1 = 0;
+  double *a_int = (double *) R_alloc(rd, sizeof(double));
+  double *anew_int = (double *) R_alloc(rd, sizeof(double));
+
+  // Initialize the shadow state to zero
+  for (int i = 0; i < rd; i++) {
+    a_int[i] = 0.0;
+  }
+  // ----------------------------------------
+
   if (d > 0) mm = (double *) R_alloc(rd * rd, sizeof(double));
 
   if (useResid) {
@@ -637,17 +649,34 @@ ARIMA_Like(SEXP sy, SEXP mod, SEXP sUP, SEXP giveResid, SEXP usePrior)
   }
 
   for (int l = 0; l < n; l++) {
+
+    // 1. Predict Next State (Merged Loops for 'r')
     for (int i = 0; i < r; i++) {
       double tmp = (i < r - 1) ? a[i + 1] : 0.0;
-      if (i < p) tmp += phi[i] * a[0];
+      double tmp_int = (i < r - 1) ? a_int[i + 1] : 0.0;
+      if (i < p) {
+        tmp += phi[i] * a[0];
+        tmp_int += phi[i] * a_int[0];
+      }
       anew[i] = tmp;
+      anew_int[i] = tmp_int;
     }
+
     if (d > 0) {
-      for (int i = r + 1; i < rd; i++) anew[i] = a[i - 1];
+      for (int i = r + 1; i < rd; i++) {
+        anew[i] = a[i - 1];
+        anew_int[i] = a_int[i - 1];
+      }
       double tmp = a[0];
-      for (int i = 0; i < d; i++) tmp += delta[i] * a[r + i];
+      double tmp_int = a_int[0];
+      for (int i = 0; i < d; i++) {
+        tmp += delta[i] * a[r + i];
+        tmp_int += delta[i] * a_int[r + i];
+      }
       anew[r] = tmp;
+      anew_int[r] = tmp_int;
     }
+
     if (l > asInteger(sUP)) {
       if (d == 0) {
         for (int i = 0; i < r; i++) {
@@ -707,10 +736,17 @@ ARIMA_Like(SEXP sy, SEXP mod, SEXP sUP, SEXP giveResid, SEXP usePrior)
         }
       }
     }
+
     if (!ISNAN(y[l])) {
+
       double resid = y[l] - anew[0];
-      for (int i = 0; i < d; i++)
+      double resid_int = 1.0 - anew_int[0];
+
+      // Safe merged loop strictly constrained to 'd' bounds
+      for (int i = 0; i < d; i++) {
         resid -= delta[i] * anew[r + i];
+        resid_int -= delta[i] * anew_int[r + i];
+      }
 
       for (int i = 0; i < rd; i++) {
         double tmp = Pnew[i];
@@ -721,19 +757,31 @@ ARIMA_Like(SEXP sy, SEXP mod, SEXP sUP, SEXP giveResid, SEXP usePrior)
 
       double gain = M[0];
       for (int j = 0; j < d; j++) gain += delta[j] * M[r + j];
+
       if(gain < 1e4 || !useDiffuse) {
         nu++;
         ssq += resid * resid / gain;
         sumlog += log(gain);
+        ssq_11 += resid_int * resid_int / gain; // Accumulate Intercept Penalty
+        ssq_Y1 += resid * resid_int / gain;  // Cross-product term
       }
       if (useResid) rsResid[l] = resid / sqrt(gain);
-      for (int i = 0; i < rd; i++)
+
+      // Safe merged loop for state update
+      for (int i = 0; i < rd; i++) {
         a[i] = anew[i] + M[i] * resid / gain;
+        a_int[i] = anew_int[i] + M[i] * resid_int / gain;
+      }
+
       for (int i = 0; i < rd; i++)
         for (int j = 0; j < rd; j++)
           P[i + j * rd] = Pnew[i + j * rd] - M[i] * M[j] / gain;
-    } else {
-      for (int i = 0; i < rd; i++) a[i] = anew[i];
+
+    } else { // Missing Data Block
+      for (int i = 0; i < rd; i++) {
+        a[i] = anew[i];
+        a_int[i] = anew_int[i];
+      }
       for (int i = 0; i < rd * rd; i++) P[i] = Pnew[i];
       if (useResid) rsResid[l] = NA_REAL;
     }
@@ -741,21 +789,26 @@ ARIMA_Like(SEXP sy, SEXP mod, SEXP sUP, SEXP giveResid, SEXP usePrior)
 
   if (useResid) {
     PROTECT(res = allocVector(VECSXP, 3));
-    SET_VECTOR_ELT(res, 0, nres = allocVector(REALSXP, 3));
+    SET_VECTOR_ELT(res, 0, nres = allocVector(REALSXP, 5));
     REAL(nres)[0] = ssq;
     REAL(nres)[1] = sumlog;
     REAL(nres)[2] = (double) nu;
+    REAL(nres)[3] = ssq_11;
+    REAL(nres)[4] = ssq_Y1;
     SET_VECTOR_ELT(res, 1, sResid);
     UNPROTECT(2);
     return res;
   } else {
-    nres = allocVector(REALSXP, 3);
+    nres = allocVector(REALSXP, 5);
     REAL(nres)[0] = ssq;
     REAL(nres)[1] = sumlog;
     REAL(nres)[2] = (double) nu;
+    REAL(nres)[3] = ssq_11;
+    REAL(nres)[4] = ssq_Y1;
     return nres;
   }
 }
+
 
 /* do differencing here */
 /* arma is p, q, sp, sq, ns, d, sd */
