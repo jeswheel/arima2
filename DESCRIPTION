@@ -1,13 +1,13 @@
 Package: arima2
 Title: Likelihood Based Inference for ARIMA Modeling
-Version: 3.4.3
-Date: 2025-12-10
+Version: 3.4.4
+Date: 2026-07-07
 Authors@R: 
     c(
     person("Jesse", 
            "Wheeler", 
            role = c("aut", "cre", "cph"),
-           email = "jessewheeler@isu.edu"),
+           email = "jesse.wheeler@usu.edu"),
     person("Noel", 
            "McAllister", 
            role = "aut",
@@ -40,7 +40,6 @@ Description: Estimating and analyzing auto regressive integrated moving average
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
@@ -51,3 +50,4 @@ Depends:
     R (>= 4.1.0)
 LazyData: true
 BugReports: https://github.com/jeswheel/arima2/issues/
+Config/roxygen2/version: 8.0.0

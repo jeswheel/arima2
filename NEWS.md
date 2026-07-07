@@ -1,4 +1,9 @@
-# arima2 (development version)
+# arima2
+
+# arima2 3.4.4
+
+* Updated maintainer address.
+* Updated `roxygen2` version
 
 # arima2 3.4.3
 
