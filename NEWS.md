@@ -1,5 +1,10 @@
 # arima2 (development version)
 
+# arima2 3.4.3
+
+* Updates to internal test functions
+* Added published article to package description.
+
 # arima2 3.4.0
 
 * Added Durbin-Levinson sampling scheme for randomly sampling ARMA coefficients. The algorithm is implement in the internal function `.DLsample`, which calls the C function `ARIMA_transPars`. The new sampling scheme can be used externally with the function `sample_ARMA_coef` by setting `method = "DL"`, or internally as part of the multi-start algorithm by setting `init_method = "DL"` in the `arima` function.
