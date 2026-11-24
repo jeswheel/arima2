@@ -38,6 +38,9 @@
 #'    algorithm, described by Monahan (1984). If
 #'    \code{init_method = "UnifRoots"}, then inverted roots of AR and MA
 #'    polynomials will be sampled uniformly from the complex unit circle.
+#' @param REML Boolean, indicating whether or not the restricted likelihood 
+#'    should be maximized. The default is FALSE, in which case the algorithm 
+#'    will return the MLE. If TRUE, the REML is returned instead.
 #' @inheritParams stats::arima
 #' @returns
 #' A list of class \code{c("Arima2", "Arima")}. This list contains all of the
@@ -95,7 +98,8 @@ arima <- function(x, order = c(0L, 0L, 0L),
                   max_repeats = 10,
                   max_inv_root = 1,
                   min_inv_root_dist = 0,
-                  eps_tol = 1e-4)
+                  eps_tol = 1e-4,
+                  REML = FALSE)
 {
 
   #  This function is based on the arima function of the stats package
@@ -160,33 +164,37 @@ arima <- function(x, order = c(0L, 0L, 0L),
     if(ncxreg > 0) x <- x - xreg %*% par[narma + (1L:ncxreg)]
     ## next call changes Z components a, P, Pn so beware!
     res <- .Call(C_ARIMA_Like, x, Z, 0L, FALSE, diffuseControl)
-    # s2 <- res[1L]/res[3L]
-    # 0.5*(log(s2) + res[2L]/res[3L])
-
-    # Extract the components from the modified C-code output
-    S_YY <- res[1L]      # Sum of squares of the data
-    log_det <- res[2L]   # Log-determinant of the covariance matrix
-    n <- res[3L]         # Number of valid observations
-    S_11 <- res[4L]      # The intercept penalty sum of squares
-    S_Y1 <- res[5L]      # Cross-product
-
-    S_Y <- S_YY - (S_Y1^2 / S_11)
-
-    # This is already profiling out \sigma^2:
-    s2_reml <- S_Y / (n - 1)
-
-    constants <- 0.5 * (n - 1) * log(2 * pi) + 0.5 * (n - 1)
-
-    # 2. Exact Restricted Negative Log-Likelihood
-    0.5 * (n - 1) * log(s2_reml) + 0.5 * log_det + 0.5 * log(S_11) + constants
-    # 0.5 * (n - 1) * log(s2_reml) + 0.5 * log_det + 0.5 * log(S_1)
+    
+    if (!REML) {
+      s2 <- res[1L] / res[3L]
+      return(0.5 * (log(s2) + res[2L] / res[3L]))
+    } else {
+      
+      # Extract the components from the modified C-code output
+      S_YY <- res[1L]      # Sum of squares of the data
+      log_det <- res[2L]   # Log-determinant of the covariance matrix
+      n <- res[3L]         # Number of valid observations
+      S_11 <- res[4L]      # The intercept penalty sum of squares
+      S_Y1 <- res[5L]      # Cross-product
+      
+      S_Y <- S_YY - (S_Y1^2 / S_11)
+      
+      # This is already profiling out \sigma^2:
+      s2_reml <- S_Y / (n - 1)
+      
+      constants <- 0.5 * (n - 1) * log(2 * pi) + 0.5 * (n - 1)
+      
+      # Exact Restricted Negative Log-Likelihood
+      return(0.5 * (n - 1) * log(s2_reml) + 0.5 * log_det + 0.5 * log(S_11) + constants)
+    }
   }
 
   armaCSS <- function(p) {
     par <- as.double(fixed)
     par[mask] <- p
     trarma <- .Call(C_ARIMA_transPars, par, arma, FALSE)
-    if(ncxreg > 0) x <- x - xreg %*% par[narma + (1L:ncxreg)]
+    if (ncxreg > 0) x <- x - xreg %*% par[narma + (1L:ncxreg)]
+    else if (REML && include.mean) x <- x - mean(x, na.rm = TRUE)
     res <- .Call(C_ARIMA_CSS, x, arma, trarma[[1L]], trarma[[2L]],
                  as.integer(ncond), FALSE)
     0.5 * log(res)
@@ -217,7 +225,25 @@ arima <- function(x, order = c(0L, 0L, 0L),
   if(NCOL(x) > 1L)
     stop("only implemented for univariate time series")
   method <- match.arg(method)
+  
+  if (!is.logical(REML) || length(REML) != 1L || is.na(REML))
+    stop("'REML' should be a single logical value.")
 
+  if (REML) {
+    if (method == "CSS") {
+      method = 'CSS-ML'
+      warning("'method = \"CSS\"' is not a valid option for restricted likelihood. Using method 'CSS-ML' instead.")
+    }
+    
+    
+    
+    if (!include.mean) {
+      REML <- FALSE
+      warning("Setting 'REML = FALSE' because of equivalence when no intercept is present.")
+    }
+  }
+  
+  
   x <- stats::as.ts(x)
   if(!is.numeric(x))
     stop("'x' must be numeric")
@@ -258,6 +284,13 @@ arima <- function(x, order = c(0L, 0L, 0L),
     Delta <- Delta %+% c(1, rep.int(0, seasonal$period-1), -1)
   Delta <- - Delta[-1L]
   nd <- order[2L] + seasonal$order[2L]
+  if (REML && nd > 0) {
+    stop("'REML = TRUE' for integrated models not yet supported.")
+  }
+  
+  if (REML && !is.null(xreg))
+    stop("'REML = TRUE' with 'xreg' is not yet supported.")
+  
   n.used <- sum(!is.na(x)) - length(Delta)
   if (is.null(xreg)) {
     ncxreg <- 0L
@@ -272,7 +305,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
   if (ncxreg > 0L && is.null(colnames(xreg)))
     colnames(xreg) <-
     if(ncxreg == 1L) nmxreg else paste0(nmxreg, 1L:ncxreg)
-  if (include.mean && (nd == 0L)) {
+  if (include.mean && (nd == 0L) && !REML) {
     xreg <- cbind(intercept = rep(1, n), xreg = xreg)
     ncxreg <- ncxreg + 1L
   }
@@ -371,12 +404,6 @@ arima <- function(x, order = c(0L, 0L, 0L),
   if(!("parscale" %in% names(optim.control)))
     optim.control$parscale <- parscale[mask]
 
-  # TODO: HERE: sets up latent process.
-  trarma <- .Call(C_ARIMA_transPars, coef, arma, transform.pars)
-  mod <- stats::makeARIMA(trarma[[1L]], trarma[[2L]], Delta, kappa, SSinit)
-
-  return(armafn(coef, FALSE))
-
   if(method == "CSS") {
     i_start = NULL
     res <- if(no.optim)
@@ -403,15 +430,6 @@ arima <- function(x, order = c(0L, 0L, 0L),
   } else {
     if (method == "CSS-ML") {
 
-      if(no.optim) {
-        return(
-          list(
-            convergence = 0, par = coef,
-            value = armafn(coef, FALSE)
-          )
-        )
-      }
-
       res <- if(no.optim)
         list(convergence=0L, par=numeric(), value=armaCSS(numeric()))
       else
@@ -430,6 +448,8 @@ arima <- function(x, order = c(0L, 0L, 0L),
 
     # Start of ML estimation
 
+    h_scale <- if (REML) 1 else n.used
+    
     best_value <- Inf
     best_coef <- coef
     converged <- FALSE
@@ -492,9 +512,9 @@ arima <- function(x, order = c(0L, 0L, 0L),
           ## stationarity region
           A <- .Call(C_ARIMA_Gradtrans, as.double(best_coef), arma)
           A <- A[mask, mask]
-          best_var <- crossprod(A, solve(best_res$hessian * n.used, A))
+          best_var <- crossprod(A, solve(best_res$hessian * h_scale, A))
           best_coef <- .Call(C_ARIMA_undoPars, best_coef, arma)
-        } else best_var <- if(no.optim) numeric() else solve(best_res$hessian * n.used)
+        } else best_var <- if(no.optim) numeric() else solve(best_res$hessian * h_scale)
 
         best_trarma <- .Call(C_ARIMA_transPars, best_coef, arma, FALSE)
         best_mod <- stats::makeARIMA(best_trarma[[1L]], best_trarma[[2L]], Delta, kappa, SSinit)
@@ -502,9 +522,16 @@ arima <- function(x, order = c(0L, 0L, 0L),
           arimaSS(x - xreg %*% best_coef[narma + (1L:ncxreg)], best_mod)
         else arimaSS(x, best_mod)
 
-        best_sigma2 <- best_val[[1L]][1L]/n.used
-        best_value <- 2 * n.used * best_res$value + n.used + n.used * log(2 * pi)
+        if (REML) {
+          best_sigma2 <- (best_val[[1L]][1L] - best_val[[1L]][5L]^2 / best_val[[1L]][4L]) / (n.used - 1)
+          best_value <- 2 * best_res$value
+        } else {
+          best_sigma2 <- best_val[[1L]][1L] / n.used
+          best_value <- 2 * n.used * best_res$value + n.used + n.used * log(2 * pi)
+        }
+        
         all_values <- c(all_values, best_value)
+        if (no.optim) break
       } else {  # New starting value
 
         # Many things can go wrong when using a random starting point as
@@ -521,7 +548,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
             {
               #### START
 
-              if (include.mean) {
+              if (include.mean && !REML) {
                 new_init <- init
                 new_init[mask] <- .sample_ARMA_coef(
                   arma = arma,
@@ -591,16 +618,22 @@ arima <- function(x, order = c(0L, 0L, 0L),
                 ## stationarity region
                 A <- .Call(C_ARIMA_Gradtrans, as.double(coef), arma)
                 A <- A[mask, mask]
-                var <- crossprod(A, solve(res$hessian * n.used, A))
+                var <- crossprod(A, solve(res$hessian * h_scale, A))
                 coef <- .Call(C_ARIMA_undoPars, coef, arma)
-              } else var <- if(no.optim) numeric() else solve(res$hessian * n.used)
+              } else var <- if(no.optim) numeric() else solve(res$hessian * h_scale)
               trarma <- .Call(C_ARIMA_transPars, coef, arma, FALSE)
               mod <- stats::makeARIMA(trarma[[1L]], trarma[[2L]], Delta, kappa, SSinit)
               val <- if(ncxreg > 0L)
                 arimaSS(x - xreg %*% coef[narma + (1L:ncxreg)], mod)
               else arimaSS(x, mod)
-              sigma2 <- val[[1L]][1L]/n.used
-              value <- 2 * n.used * res$value + n.used + n.used * log(2 * pi)
+
+              if (REML) {
+                sigma2 <- (val[[1L]][1L] - val[[1L]][5L]^2 / val[[1L]][4L]) / (n.used - 1)
+                value <- 2 * res$value
+              } else {
+                sigma2 <- val[[1L]][1L] / n.used
+                value <- 2 * n.used * res$value + n.used + n.used * log(2 * pi)
+              }
 
               list(
                 i_trarma = trarma,
@@ -712,7 +745,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
   }  # End of ML Estimation
 
   # value <- 2 * n.used * res$value + n.used + n.used * log(2 * pi)
-  aic <- if(method != "CSS") value + 2*sum(mask) + 2 else NA
+  aic <- if (method != "CSS" && !REML) value + 2 * sum(mask) + 2 else NA
   nm <- NULL
   if (arma[1L] > 0L) nm <- c(nm, paste0("ar", 1L:arma[1L]))
   if (arma[2L] > 0L) nm <- c(nm, paste0("ma", 1L:arma[2L]))
@@ -727,6 +760,22 @@ arima <- function(x, order = c(0L, 0L, 0L),
       A[ind, ind] <- S$v
       A <- A[mask, mask]
       var <- A %*% var %*% t(A)
+    }
+  }
+  if (REML && include.mean) {
+    S_11 <- val[[1L]][4L]
+    S_X1 <- val[[1L]][5L]
+    mu_hat <- S_X1 / S_11
+    val <- arimaSS(x - mu_hat, mod)
+    coef <- c(coef, mu_hat)
+    mask <- c(mask, TRUE)
+    nm <- c(nm, "intercept")
+    if (!no.optim) {
+      k <- nrow(var)
+      var_full <- matrix(0, k + 1L, k + 1L)
+      var_full[seq_len(k), seq_len(k)] <- var
+      var_full[k + 1L, k + 1L] <- sigma2 / S_11
+      var <- var_full
     }
   }
   names(coef) <- nm

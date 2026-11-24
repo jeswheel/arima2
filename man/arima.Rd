@@ -25,7 +25,8 @@ arima(
   max_repeats = 10,
   max_inv_root = 1,
   min_inv_root_dist = 0,
-  eps_tol = 1e-04
+  eps_tol = 1e-04,
+  REML = FALSE
 )
 }
 \arguments{
@@ -149,6 +150,10 @@ values near 0.}
 \item{eps_tol}{Tolerance for accepting a new solution to be better than a
 previous solution in terms of log-likelihood. The default corresponds to a
 one ten-thousandth unit increase in log-likelihood.}
+
+\item{REML}{Boolean, indicating whether or not the restricted likelihood
+should be maximized. The default is FALSE, in which case the algorithm
+will return the MLE. If TRUE, the REML is returned instead.}
 }
 \value{
 A list of class \code{c("Arima2", "Arima")}. This list contains all of the
