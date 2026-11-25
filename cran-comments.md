@@ -1,6 +1,16 @@
 ## R CMD check results
 
-0 errors | 0 warnings | 0 notes
+0 errors | 0 warnings | 1 notes
+
+checking CRAN incoming feasibility ... NOTE
+  Maintainer: ‘Jesse Wheeler <jesse.wheeler@usu.edu>’
+  
+  New maintainer:
+    Jesse Wheeler <jesse.wheeler@usu.edu>
+  Old maintainer(s):
+    Jesse Wheeler <jessewheeler@isu.edu>
+
+  Justification: The maintainer email address has been updated due to an institutional move from ISU to USU.
 
 ## revdepcheck results
 
