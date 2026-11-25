@@ -12,6 +12,14 @@
 #'    [stats::arima()] if argument \code{diffuseControl} is also set as TRUE.
 #'    \code{max_iters} is often not reached because the condition
 #'    \code{max_repeats} is typically achieved first.
+#' @param method Fitting method: maximum likelihood (ML), minimize conditional
+#'    sum-of-squares (CSS), or restricted maximum likelihood (REML). The default
+#'    (`"CSS-ML"`) finds starting values by CSS (minimizing the conditional sum
+#'     of squares) as a warm-start, followed by likelihood maximization. `"ML"`
+#'     directly maximizes the likelihood without the warm-restart, and is used
+#'     internally if missing values are present [stats::arima()]. `"REML"`
+#'     maximizes the restricted log-likelihood using a CSS warm-start on the
+#'     first iteration (when no missing values are present).
 #' @param max_repeats Integer. If the last \code{max_repeats} random starts did
 #'    not result in improved likelihoods, then stop the search. Each result of
 #'    the optim function is only considered to improve the likelihood if it does
@@ -38,9 +46,6 @@
 #'    algorithm, described by Monahan (1984). If
 #'    \code{init_method = "UnifRoots"}, then inverted roots of AR and MA
 #'    polynomials will be sampled uniformly from the complex unit circle.
-#' @param REML Boolean, indicating whether or not the restricted likelihood 
-#'    should be maximized. The default is FALSE, in which case the algorithm 
-#'    will return the MLE. If TRUE, the REML is returned instead.
 #' @inheritParams stats::arima
 #' @returns
 #' A list of class \code{c("Arima2", "Arima")}. This list contains all of the
@@ -87,7 +92,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
                   seasonal = list(order = c(0L, 0L, 0L), period = NA),
                   xreg = NULL, include.mean = TRUE,
                   transform.pars = TRUE, fixed = NULL, init = NULL,
-                  method = c("CSS-ML", "ML", "CSS"),
+                  method = c("CSS-ML", "ML", "REML", "CSS"),
                   init_method = c("DL", "UnifRoots"),
                   n.cond,
                   SSinit = c("Rossignol2011", "Gardner1980"),
@@ -98,8 +103,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
                   max_repeats = 10,
                   max_inv_root = 1,
                   min_inv_root_dist = 0,
-                  eps_tol = 1e-4,
-                  REML = FALSE)
+                  eps_tol = 1e-4)
 {
 
   #  This function is based on the arima function of the stats package
@@ -126,6 +130,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
   #
   # (arima2) Date: Dec 6, 2022
   # Revised: Jan 23, 2023
+  #          Nov 24, 2026 - Added REML capabilities.
 
   "%+%" <- function(a, b) .Call(C_TSconv, a, b)
 
@@ -164,26 +169,26 @@ arima <- function(x, order = c(0L, 0L, 0L),
     if(ncxreg > 0) x <- x - xreg %*% par[narma + (1L:ncxreg)]
     ## next call changes Z components a, P, Pn so beware!
     res <- .Call(C_ARIMA_Like, x, Z, 0L, FALSE, diffuseControl)
-    
-    if (!REML) {
+
+    if (!is_reml) {
       s2 <- res[1L] / res[3L]
       return(0.5 * (log(s2) + res[2L] / res[3L]))
     } else {
-      
+
       # Extract the components from the modified C-code output
       S_YY <- res[1L]      # Sum of squares of the data
       log_det <- res[2L]   # Log-determinant of the covariance matrix
       n <- res[3L]         # Number of valid observations
       S_11 <- res[4L]      # The intercept penalty sum of squares
       S_Y1 <- res[5L]      # Cross-product
-      
+
       S_Y <- S_YY - (S_Y1^2 / S_11)
-      
+
       # This is already profiling out \sigma^2:
       s2_reml <- S_Y / (n - 1)
-      
+
       constants <- 0.5 * (n - 1) * log(2 * pi) + 0.5 * (n - 1)
-      
+
       # Exact Restricted Negative Log-Likelihood
       return(0.5 * (n - 1) * log(s2_reml) + 0.5 * log_det + 0.5 * log(S_11) + constants)
     }
@@ -194,7 +199,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
     par[mask] <- p
     trarma <- .Call(C_ARIMA_transPars, par, arma, FALSE)
     if (ncxreg > 0) x <- x - xreg %*% par[narma + (1L:ncxreg)]
-    else if (REML && include.mean) x <- x - mean(x, na.rm = TRUE)
+    else if (is_reml && include.mean) x <- x - mean(x, na.rm = TRUE)
     res <- .Call(C_ARIMA_CSS, x, arma, trarma[[1L]], trarma[[2L]],
                  as.integer(ncond), FALSE)
     0.5 * log(res)
@@ -225,25 +230,14 @@ arima <- function(x, order = c(0L, 0L, 0L),
   if(NCOL(x) > 1L)
     stop("only implemented for univariate time series")
   method <- match.arg(method)
-  
-  if (!is.logical(REML) || length(REML) != 1L || is.na(REML))
-    stop("'REML' should be a single logical value.")
+  is_reml <- method == 'REML'
 
-  if (REML) {
-    if (method == "CSS") {
-      method = 'CSS-ML'
-      warning("'method = \"CSS\"' is not a valid option for restricted likelihood. Using method 'CSS-ML' instead.")
-    }
-    
-    
-    
-    if (!include.mean) {
-      REML <- FALSE
-      warning("Setting 'REML = FALSE' because of equivalence when no intercept is present.")
-    }
+  if (is_reml && !include.mean) {
+    is_reml <- FALSE
+    method <- "CSS-ML"
+    warning("Using 'method = \"CSS-ML\"' because REML is equivalent to ML when no intercept is present.")
   }
-  
-  
+
   x <- stats::as.ts(x)
   if(!is.numeric(x))
     stop("'x' must be numeric")
@@ -284,13 +278,13 @@ arima <- function(x, order = c(0L, 0L, 0L),
     Delta <- Delta %+% c(1, rep.int(0, seasonal$period-1), -1)
   Delta <- - Delta[-1L]
   nd <- order[2L] + seasonal$order[2L]
-  if (REML && nd > 0) {
-    stop("'REML = TRUE' for integrated models not yet supported.")
+  if (is_reml && nd > 0) {
+    stop("'method = \"REML\"' for integrated models is not yet supported.")
   }
-  
-  if (REML && !is.null(xreg))
-    stop("'REML = TRUE' with 'xreg' is not yet supported.")
-  
+
+  if (is_reml && !is.null(xreg))
+    stop("'method = \"REML\"' with 'xreg' is not yet supported.")
+
   n.used <- sum(!is.na(x)) - length(Delta)
   if (is.null(xreg)) {
     ncxreg <- 0L
@@ -305,17 +299,21 @@ arima <- function(x, order = c(0L, 0L, 0L),
   if (ncxreg > 0L && is.null(colnames(xreg)))
     colnames(xreg) <-
     if(ncxreg == 1L) nmxreg else paste0(nmxreg, 1L:ncxreg)
-  if (include.mean && (nd == 0L) && !REML) {
+  if (include.mean && (nd == 0L) && !is_reml) {
     xreg <- cbind(intercept = rep(1, n), xreg = xreg)
     ncxreg <- ncxreg + 1L
   }
-  if(method == "CSS-ML") {
+  use_css_init <- method %in% c("CSS-ML", "REML")
+  if (use_css_init) {
     anyna <- anyNA(x)
     if(ncxreg) anyna <- anyna || anyNA(xreg)
-    if(anyna) method <- "ML"
+    if (anyna) {
+      use_css_init <- FALSE
+      if (method == "CSS-ML") method <- "ML"
+    }
   }
 
-  if (method == "CSS" || method == "CSS-ML") {
+  if (method == "CSS" || use_css_init) {
     ncond <- order[2L] + seasonal$order[2L] * seasonal$period
     ncond1 <- order[1L] + seasonal$period * seasonal$order[1L]
     ncond <- ncond + if(!missing(n.cond)) max(n.cond, ncond1) else ncond1
@@ -428,7 +426,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
     value <- 2 * n.used * res$value + n.used + n.used * log(2 * pi)
     all_values <- value
   } else {
-    if (method == "CSS-ML") {
+    if (use_css_init) {
 
       res <- if(no.optim)
         list(convergence=0L, par=numeric(), value=armaCSS(numeric()))
@@ -448,8 +446,8 @@ arima <- function(x, order = c(0L, 0L, 0L),
 
     # Start of ML estimation
 
-    h_scale <- if (REML) 1 else n.used
-    
+    h_scale <- if (is_reml) 1 else n.used
+
     best_value <- Inf
     best_coef <- coef
     converged <- FALSE
@@ -522,14 +520,14 @@ arima <- function(x, order = c(0L, 0L, 0L),
           arimaSS(x - xreg %*% best_coef[narma + (1L:ncxreg)], best_mod)
         else arimaSS(x, best_mod)
 
-        if (REML) {
+        if (is_reml) {
           best_sigma2 <- (best_val[[1L]][1L] - best_val[[1L]][5L]^2 / best_val[[1L]][4L]) / (n.used - 1)
           best_value <- 2 * best_res$value
         } else {
           best_sigma2 <- best_val[[1L]][1L] / n.used
           best_value <- 2 * n.used * best_res$value + n.used + n.used * log(2 * pi)
         }
-        
+
         all_values <- c(all_values, best_value)
         if (no.optim) break
       } else {  # New starting value
@@ -548,7 +546,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
             {
               #### START
 
-              if (include.mean && !REML) {
+              if (include.mean && !is_reml) {
                 new_init <- init
                 new_init[mask] <- .sample_ARMA_coef(
                   arma = arma,
@@ -627,7 +625,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
                 arimaSS(x - xreg %*% coef[narma + (1L:ncxreg)], mod)
               else arimaSS(x, mod)
 
-              if (REML) {
+              if (is_reml) {
                 sigma2 <- (val[[1L]][1L] - val[[1L]][5L]^2 / val[[1L]][4L]) / (n.used - 1)
                 value <- 2 * res$value
               } else {
@@ -745,7 +743,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
   }  # End of ML Estimation
 
   # value <- 2 * n.used * res$value + n.used + n.used * log(2 * pi)
-  aic <- if (method != "CSS" && !REML) value + 2 * sum(mask) + 2 else NA
+  aic <- if (method != "CSS" && !is_reml) value + 2 * sum(mask) + 2 else NA
   nm <- NULL
   if (arma[1L] > 0L) nm <- c(nm, paste0("ar", 1L:arma[1L]))
   if (arma[2L] > 0L) nm <- c(nm, paste0("ma", 1L:arma[2L]))
@@ -762,7 +760,7 @@ arima <- function(x, order = c(0L, 0L, 0L),
       var <- A %*% var %*% t(A)
     }
   }
-  if (REML && include.mean) {
+  if (is_reml && include.mean) {
     S_11 <- val[[1L]][4L]
     S_X1 <- val[[1L]][5L]
     mu_hat <- S_X1 / S_11

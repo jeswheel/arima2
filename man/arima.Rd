@@ -13,7 +13,7 @@ arima(
   transform.pars = TRUE,
   fixed = NULL,
   init = NULL,
-  method = c("CSS-ML", "ML", "CSS"),
+  method = c("CSS-ML", "ML", "REML", "CSS"),
   init_method = c("DL", "UnifRoots"),
   n.cond,
   SSinit = c("Rossignol2011", "Gardner1980"),
@@ -25,8 +25,7 @@ arima(
   max_repeats = 10,
   max_inv_root = 1,
   min_inv_root_dist = 0,
-  eps_tol = 1e-04,
-  REML = FALSE
+  eps_tol = 1e-04
 )
 }
 \arguments{
@@ -88,10 +87,14 @@ arima(
     regression coefficients.  Values already specified in \code{fixed}
     will be ignored.}
 
-\item{method}{fitting method: maximum likelihood or minimize
-    conditional sum-of-squares.  The default (unless there are missing
-    values) is to use conditional-sum-of-squares to find starting
-    values, then maximum likelihood.  Can be abbreviated.}
+\item{method}{Fitting method: maximum likelihood (ML), minimize conditional
+sum-of-squares (CSS), or restricted maximum likelihood (REML). The default
+(\code{"CSS-ML"}) finds starting values by CSS (minimizing the conditional sum
+of squares) as a warm-start, followed by likelihood maximization. \code{"ML"}
+directly maximizes the likelihood without the warm-restart, and is used
+internally if missing values are present \code{\link[stats:arima]{stats::arima()}}. \code{"REML"}
+maximizes the restricted log-likelihood using a CSS warm-start on the
+first iteration (when no missing values are present).}
 
 \item{init_method}{Method used to randomly sample parameter initializations.
 \code{init_method = "DL"} will sample parameters using the Durbin-Levinson
@@ -150,10 +153,6 @@ values near 0.}
 \item{eps_tol}{Tolerance for accepting a new solution to be better than a
 previous solution in terms of log-likelihood. The default corresponds to a
 one ten-thousandth unit increase in log-likelihood.}
-
-\item{REML}{Boolean, indicating whether or not the restricted likelihood
-should be maximized. The default is FALSE, in which case the algorithm
-will return the MLE. If TRUE, the REML is returned instead.}
 }
 \value{
 A list of class \code{c("Arima2", "Arima")}. This list contains all of the
